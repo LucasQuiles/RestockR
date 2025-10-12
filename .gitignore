@@ -1,12 +1,50 @@
-/.dart_tool/
-/.idea/
-/build/
-/.vscode/
+# Flutter & Dart
+.dart_tool/
+.packages
+.pub-cache/
 
-/.flutter-plugins
-/.flutter-plugins-dependencies
-/.packages
-/.idea/.wiseGPT/
-/ios/Podfile
-/pubspec.lock
+# Build outputs
+build/
+**/Build/
+
+# Generated plugins & registrants
+.flutter-plugins
+.flutter-plugins-dependencies
+**/GeneratedPluginRegistrant.*
+
+# IntelliJ / Android Studio
+.idea/
+*.iml
+*.ipr
+*.iws
+.idea/.wiseGPT/
+android/.gradle/
+android/local.properties
+
+# VS Code
+.vscode/
+
+# Xcode
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Generated.xcconfig
+ios/Flutter/ephemeral/
+ios/.symlinks/
+ios/Pods/
+
+# macOS
 .DS_Store
+
+# Coverage & logs
+coverage/
+*.log
+
+# Misc caches
+*.swp
+*.swo
+.fvm/
+
+# Fastlane
+**/fastlane/report.xml
+**/fastlane/Preview.html
+**/fastlane/screenshots
