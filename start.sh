@@ -46,6 +46,8 @@ debug() {
 
 log_plain "=== RestockR start.sh log ${LOG_TIMESTAMP} ==="
 
+IOS_TOOLS_AVAILABLE=false
+
 TERM_COLS=80
 update_term_cols() {
   local cols
@@ -241,6 +243,79 @@ version_ge() {
     return 0
   fi
   return 1
+}
+
+check_xcode_toolchain() {
+  if [[ "$(uname -s)" != "Darwin" ]]; then
+    debug "Non-macOS host; skipping Xcode toolchain check"
+    return 0
+  fi
+
+  debug "Checking Xcode toolchain availability"
+  local xcode_path
+  xcode_path="$(xcode-select -p 2>/dev/null || true)"
+  if [[ -z "${xcode_path}" ]]; then
+    warn "Xcode Command Line Tools not detected. Install Xcode or run 'xcode-select --install'."
+    log_plain "[ACTION] Install Xcode from the App Store or run 'xcode-select --install' to enable iOS simulators."
+    if [[ -d "/Applications/Xcode.app/Contents/Developer" ]]; then
+      read -r -p "Set developer directory to /Applications/Xcode.app/Contents/Developer now? [y/N] " resp || true
+      resp="${resp,,}"
+      if [[ "${resp}" == "y" || "${resp}" == "yes" ]]; then
+        info "Switching developer directory to Xcode.app"
+        if sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer; then
+          ok "Developer directory updated."
+          xcode_path="/Applications/Xcode.app/Contents/Developer"
+        else
+          warn "Unable to switch developer directory automatically."
+        fi
+      fi
+    else
+      read -r -p "Open App Store to install Xcode? [y/N] " resp || true
+      resp="${resp,,}"
+      if [[ "${resp}" == "y" || "${resp}" == "yes" ]]; then
+        open "macappstore://apps.apple.com/app/xcode/id497799835" >/dev/null 2>&1 || warn "Unable to open App Store automatically."
+      fi
+    fi
+  fi
+
+  if [[ -z "${xcode_path}" ]]; then
+    debug "check_xcode_toolchain: developer path unresolved"
+    return 1
+  fi
+
+  debug "xcode-select path: ${xcode_path}"
+
+  local simctl_check
+  if ! simctl_check="$(xcrun simctl help 2>&1)"; then
+    warn "xcrun simctl not available. Install full Xcode or point xcode-select to it."
+    debug "xcrun simctl help output: ${simctl_check}"
+    if [[ -d "/Applications/Xcode.app/Contents/Developer" && "${xcode_path}" != "/Applications/Xcode.app/Contents/Developer" ]]; then
+      read -r -p "Switch developer directory to /Applications/Xcode.app/Contents/Developer now? [y/N] " resp || true
+      resp="${resp,,}"
+      if [[ "${resp}" == "y" || "${resp}" == "yes" ]]; then
+        info "Switching developer directory to Xcode.app"
+        if sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer; then
+          ok "Developer directory updated."
+          if xcrun simctl help >/dev/null 2>&1; then
+            debug "simctl available after switch"
+            return 0
+          fi
+        else
+          warn "Unable to switch developer directory automatically."
+        fi
+      fi
+    else
+      read -r -p "Open documentation on installing Xcode Command Line Tools? [y/N] " resp || true
+      resp="${resp,,}"
+      if [[ "${resp}" == "y" || "${resp}" == "yes" ]]; then
+        open "https://developer.apple.com/xcode/resources/" >/dev/null 2>&1 || true
+      fi
+    fi
+    return 1
+  fi
+
+  debug "xcrun simctl is available"
+  return 0
 }
 
 ensure_structure() {
@@ -462,6 +537,14 @@ diagnose_dependencies() {
     warn "Flutter doctor found some issues. You may need to run 'flutter doctor' manually."
   else
     ok "Flutter self-check passed"
+  fi
+
+  if check_xcode_toolchain; then
+    IOS_TOOLS_AVAILABLE=true
+    debug "iOS toolchain available: simctl ready"
+  else
+    IOS_TOOLS_AVAILABLE=false
+    debug "iOS toolchain unavailable; autostart will skip native simulator"
   fi
 }
 
@@ -1118,8 +1201,12 @@ auto_launch_default_environment() {
   info "Preparing development environment (autostart)"
   log_plain "[INFO] Log file: ${LOG_FILE}"
 
-  if launch_ios_environment; then
-    return 0
+  if [[ "${IOS_TOOLS_AVAILABLE}" == true ]]; then
+    if launch_ios_environment; then
+      return 0
+    fi
+  else
+    debug "Skipping iOS autolaunch; IOS_TOOLS_AVAILABLE=${IOS_TOOLS_AVAILABLE}"
   fi
 
   if launch_android_environment; then
@@ -1185,19 +1272,30 @@ launch_emulator_menu() {
         list_emulators
         read -r -p "Press Enter to continue..." || true
         ;;
-      3)
-        if [[ "$(uname -s)" != "Darwin" ]]; then
-          error "iOS Simulators are only available on macOS"
-          continue
-        fi
-        if ! $has_xcode; then
-          setup_xcode
-          continue
-        fi
+    3)
+      if [[ "$(uname -s)" != "Darwin" ]]; then
+        error "iOS Simulators are only available on macOS"
+        continue
+      fi
+      if ! $has_xcode; then
+        setup_xcode
+        continue
+      fi
 
-        local sim_list=""
-        local emu_json
-        emu_json="$(flutter emulators --machine 2>/dev/null || echo "")"
+      if [[ "${IOS_TOOLS_AVAILABLE}" != true ]]; then
+        if check_xcode_toolchain; then
+          IOS_TOOLS_AVAILABLE=true
+          debug "iOS toolchain became available via emulator menu"
+        else
+          IOS_TOOLS_AVAILABLE=false
+          warn "iOS tooling still unavailable. Install Xcode and re-run start.sh."
+          continue
+        fi
+      fi
+
+      local sim_list=""
+      local emu_json
+      emu_json="$(flutter emulators --machine 2>/dev/null || echo "")"
         if command -v python3 >/dev/null 2>&1; then
           sim_list="$(RESTOCKR_JSON="${emu_json}" python3 - <<'PY'
 import json, os

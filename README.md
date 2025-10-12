@@ -95,6 +95,8 @@ What `start.sh` does:
 - Runs self-diagnosis on required tooling and offers guided repair/installation flows (Homebrew/snap/apt) where possible.
 - Summarises connected devices, lists available emulators, autogenerates/boots default iOS & Android simulators when none exist, and launches RestockR automatically (falling back to Chrome when native targets aren’t available).
 - Streams a detailed log to `.restockr_logs/start_<timestamp>.log` so you can review each step or share traces when debugging.
+
+> **Note:** Automatic iOS simulator launch requires full Xcode (including the simulator tools). If the launcher reports missing `xcrun simctl`, install Xcode from the App Store (or run `xcode-select --install`) and re-run `./start.sh`.
 - Provides a quick-start checklist (start emulator → run app → update `env.json`) each time the developer menu opens.
 
 ### Build for Release
