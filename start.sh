@@ -49,6 +49,9 @@ log_plain "=== RestockR start.sh log ${LOG_TIMESTAMP} ==="
 IOS_TOOLS_AVAILABLE=false
 IOS_TOOLS_CHECKED=false
 IOS_ACTIVE_DEVICE=""
+COCOAPODS_AVAILABLE=false
+COCOAPODS_CHECKED=false
+IOS_PODS_READY=false
 
 TERM_COLS=80
 update_term_cols() {
@@ -565,6 +568,7 @@ diagnose_dependencies() {
 
   if ensure_ios_toolchain_status; then
     debug "iOS toolchain available: simctl ready"
+    ensure_cocoapods || true
   else
     warn "iOS tooling unavailable; automatic iOS simulator launch will be skipped until installed."
   fi
@@ -584,6 +588,73 @@ run_flutter_command() {
     error "${description} failed"
     return 1
   fi
+}
+
+ensure_cocoapods() {
+  if [[ "$(uname -s)" != "Darwin" ]]; then
+    return 0
+  fi
+
+  if [[ "${COCOAPODS_CHECKED}" == true ]]; then
+    debug "CocoaPods already checked: available=${COCOAPODS_AVAILABLE}"
+    if [[ "${COCOAPODS_AVAILABLE}" == true ]]; then
+      return 0
+    fi
+    return 1
+  fi
+
+  COCOAPODS_CHECKED=true
+
+  if command -v pod >/dev/null 2>&1; then
+    COCOAPODS_AVAILABLE=true
+    debug "Detected CocoaPods binary"
+    return 0
+  fi
+
+  warn "CocoaPods not installed. iOS plugins require CocoaPods."
+  log_plain "[ACTION] Install CocoaPods via 'sudo gem install cocoapods' or Homebrew 'brew install cocoapods'."
+  read -r -p "Install CocoaPods now with 'sudo gem install cocoapods'? [y/N] " resp || true
+  resp="${resp,,}"
+  if [[ "${resp}" == "y" || "${resp}" == "yes" ]]; then
+    info "Installing CocoaPods (requires sudo)."
+    if sudo gem install cocoapods --no-document; then
+      ok "CocoaPods installed successfully."
+      COCOAPODS_AVAILABLE=true
+      return 0
+    else
+      warn "Automatic CocoaPods installation failed. Run 'sudo gem install cocoapods' manually."
+    fi
+  fi
+
+  warn "CocoaPods is required to build iOS. Install it and re-run the launcher."
+  COCOAPODS_AVAILABLE=false
+  return 1
+}
+
+prepare_ios_project() {
+  if ! ensure_cocoapods; then
+    return 1
+  fi
+
+  if [[ "${IOS_PODS_READY}" == true ]]; then
+    debug "iOS pods already prepared"
+    return 0
+  fi
+
+  if [[ ! -d "${PROJECT_ROOT}/ios" ]]; then
+    warn "iOS directory not found; skipping pod install."
+    return 1
+  fi
+
+  info "Running pod install (ios/)"
+  if (cd "${PROJECT_ROOT}/ios" && pod install >/dev/null 2>&1); then
+    ok "pod install completed"
+    IOS_PODS_READY=true
+    return 0
+  fi
+
+  warn "pod install failed. Review CocoaPods setup."
+  return 1
 }
 
 run_flutter_clean() {
@@ -1265,6 +1336,9 @@ launch_ios_environment() {
 
   IOS_ACTIVE_DEVICE="${device_id}"
   debug "Found iOS simulator device ${device_id}"
+  if ! prepare_ios_project; then
+    warn "iOS project not fully prepared (CocoaPods missing?)."
+  fi
   info "Launching ${APP_NAME} on iOS simulator (${device_id})"
   run_flutter_run -d "${device_id}"
   return 0
@@ -1301,12 +1375,12 @@ auto_launch_default_environment() {
   info "Preparing development environment (autostart)"
   log_plain "[INFO] Log file: ${LOG_FILE}"
 
-  if [[ "${IOS_TOOLS_AVAILABLE}" == true ]]; then
+  if [[ "${IOS_TOOLS_AVAILABLE}" == true && "${COCOAPODS_AVAILABLE}" == true ]]; then
     if launch_ios_environment; then
       return 0
     fi
   else
-    debug "Skipping iOS autolaunch; IOS_TOOLS_AVAILABLE=${IOS_TOOLS_AVAILABLE}"
+    debug "Skipping iOS autolaunch; IOS_TOOLS_AVAILABLE=${IOS_TOOLS_AVAILABLE} COCOAPODS_AVAILABLE=${COCOAPODS_AVAILABLE}"
   fi
 
   if launch_android_environment; then
