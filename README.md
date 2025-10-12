@@ -79,6 +79,23 @@ flutter pub get
 flutter run
 ```
 
+### Quick Start Script
+
+If you extracted a fresh zip, you can bootstrap everything with:
+
+```bash
+./start.sh
+```
+
+What `start.sh` does:
+- If the executable bit was stripped by your unzip tool, run `chmod +x start.sh` once before executing.
+- Detects whether the RestockR Dev Kit is already set up (via a `.restockr_devkit` marker) and shows the appropriate menu:
+  - First run: `[1] Install RestockR Dev Kit` verifies the project structure, recreates `env.json` if missing, checks Flutter/Dart/git, and runs `flutter pub get`.
+  - After installation: `[1] Launch Developer Menu` (run app, tests, analyzer, doctor), `[2] Emulator Launcher` (guided simulator/emulator workflow for Chrome/iOS/Android), `[3] Install/Update Dependencies`, `[4] Re-install RestockR Dev Kit`, `[5] Exit.
+- Runs self-diagnosis on required tooling and offers guided repair/installation flows (Homebrew/snap/apt) where possible.
+- Summarises connected devices, lists available emulators, autogenerates default iOS/Android emulators when none exist, and can open the iOS Simulator or Android Studio Device Manager with contextual instructions.
+- Provides a quick-start checklist (start emulator → run app → update `env.json`) each time the developer menu opens.
+
 ### Build for Release
 ```bash
 # Android

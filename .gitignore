@@ -48,3 +48,6 @@ coverage/
 **/fastlane/report.xml
 **/fastlane/Preview.html
 **/fastlane/screenshots
+
+# Dev kit marker
+.restockr_devkit
