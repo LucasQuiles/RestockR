@@ -25,6 +25,27 @@ else
   RESET=""
 fi
 
+LOG_TIMESTAMP="$(date -u +"%Y%m%dT%H%M%SZ")"
+LOG_DIR="${PROJECT_ROOT}/.restockr_logs"
+LOG_FILE="${LOG_DIR}/start_${LOG_TIMESTAMP}.log"
+mkdir -p "${LOG_DIR}"
+: > "${LOG_FILE}"
+
+DEBUG_MODE="${RESTOCKR_DEBUG:-false}"
+
+log_plain() {
+  printf "%s\n" "$1" >> "${LOG_FILE}"
+}
+
+debug() {
+  if [[ "${DEBUG_MODE}" == true ]]; then
+    printf "%b[DEBUG]%b %s\n" "${DIM}${BLUE}" "${RESET}" "$1"
+    log_plain "[DEBUG] $1"
+  fi
+}
+
+log_plain "=== RestockR start.sh log ${LOG_TIMESTAMP} ==="
+
 TERM_COLS=80
 update_term_cols() {
   local cols
@@ -202,13 +223,14 @@ EOF
   printf "\n"
 }
 
-info()  { printf "%b[INFO]%b %s\n" "${BLUE}${BOLD}" "${RESET}" "$1"; }
-warn()  { printf "%b[WARN]%b %s\n" "${YELLOW}${BOLD}" "${RESET}" "$1"; }
-error() { printf "%b[ERROR]%b %s\n" "${RED}${BOLD}" "${RESET}" "$1"; }
-ok()    { printf "%b[OK]%b %s\n" "${GREEN}${BOLD}" "${RESET}" "$1"; }
+info()  { printf "%b[INFO]%b %s\n" "${BLUE}${BOLD}" "${RESET}" "$1"; log_plain "[INFO] $1"; }
+warn()  { printf "%b[WARN]%b %s\n" "${YELLOW}${BOLD}" "${RESET}" "$1"; log_plain "[WARN] $1"; }
+error() { printf "%b[ERROR]%b %s\n" "${RED}${BOLD}" "${RESET}" "$1"; log_plain "[ERROR] $1"; }
+ok()    { printf "%b[OK]%b %s\n" "${GREEN}${BOLD}" "${RESET}" "$1"; log_plain "[OK] $1"; }
 
 cleanup() {
   printf "\n${DIM}Closing ${APP_NAME} starter.${RESET}\n"
+  log_plain "[INFO] Closing ${APP_NAME} starter"
 }
 trap cleanup EXIT
 
@@ -476,6 +498,7 @@ run_flutter_doctor() {
 }
 
 run_flutter_run() {
+  debug "Executing flutter run $*"
   run_flutter_command "Launching ${APP_NAME}" flutter run "$@"
 }
 
@@ -832,6 +855,7 @@ open_simulator_app() {
   fi
 
   # Try default Application bundle resolution first
+  debug "Attempting to open Simulator via bundle lookup"
   if open -a Simulator >/dev/null 2>&1; then
     ok "Simulator app launching..."
     return 0
@@ -844,6 +868,7 @@ open_simulator_app() {
     if [[ -n "${dev_dir}" ]]; then
       local sim_app="${dev_dir}/Applications/Simulator.app"
       if [[ -d "${sim_app}" ]]; then
+        debug "Attempting to open Simulator via path: ${sim_app}"
         if open "${sim_app}" >/dev/null 2>&1; then
           ok "Simulator app launching..."
           return 0
@@ -855,6 +880,7 @@ open_simulator_app() {
   # Fallback to global Applications path
   local fallback="/Applications/Xcode.app/Contents/Developer/Applications/Simulator.app"
   if [[ -d "${fallback}" ]]; then
+    debug "Attempting fallback Simulator path: ${fallback}"
     if open "${fallback}" >/dev/null 2>&1; then
       ok "Simulator app launching..."
       return 0
@@ -890,14 +916,20 @@ create_ios_simulator() {
     return 1
   fi
 
+  debug "create_ios_simulator resolved runtime_id=${runtime_id} device_id=${device_id}"
+
   local sim_name="RestockR iPhone $(date +%H%M%S)"
   info "Creating iOS simulator '${sim_name}'"
-  if xcrun simctl create "${sim_name}" "${device_id}" "${runtime_id}" >/dev/null 2>&1; then
+  local create_output
+  if create_output="$(xcrun simctl create "${sim_name}" "${device_id}" "${runtime_id}" 2>&1)"; then
     ok "Created simulator '${sim_name}'."
+    debug "simctl create output: ${create_output}"
     return 0
   fi
 
-  warn "Failed to create iOS simulator automatically."
+  local status=$?
+  warn "Failed to create iOS simulator automatically (exit ${status})."
+  debug "simctl create stderr: ${create_output}"
   return 1
 }
 
@@ -931,12 +963,16 @@ create_android_emulator() {
 
   local name="restockr_avd"
   info "Creating Android emulator '${name}'"
-  if flutter emulators --create --name "${name}" --device pixel >/dev/null 2>&1; then
+  local create_output
+  if create_output="$(flutter emulators --create --name "${name}" --device pixel 2>&1)"; then
     ok "Created Android emulator '${name}'."
+    debug "flutter emulators --create output: ${create_output}"
     return 0
   fi
 
-  warn "Failed to auto-create Android emulator."
+  local status=$?
+  warn "Failed to auto-create Android emulator (exit ${status})."
+  debug "flutter emulators --create stderr: ${create_output}"
   return 1
 }
 
@@ -1002,12 +1038,17 @@ wait_for_device() {
   for ((i = 0; i < attempts; i++)); do
     if device_id="$(get_device_id_by_platform "${platform}")"; then
       if [[ -n "${device_id}" ]]; then
+        debug "Detected ${platform} device ${device_id} after $((i+1)) attempts"
         echo "${device_id}"
         return 0
       fi
     fi
+    if (( (i + 1) % 5 == 0 )); then
+      debug "Waiting for ${platform} device... attempt $((i+1))/${attempts}"
+    fi
     sleep "${delay}"
   done
+  debug "No ${platform} device detected after ${attempts} attempts"
   return 1
 }
 
@@ -1019,8 +1060,17 @@ launch_ios_environment() {
     return 1
   fi
 
-  ensure_ios_simulator || true
-  open_simulator_app || true
+  if ensure_ios_simulator; then
+    debug "ensure_ios_simulator succeeded"
+  else
+    debug "ensure_ios_simulator failed"
+  fi
+
+  if open_simulator_app; then
+    debug "open_simulator_app invocation succeeded"
+  else
+    debug "open_simulator_app invocation failed"
+  fi
 
   info "Waiting for iOS simulator to boot..."
   local device_id
@@ -1029,6 +1079,7 @@ launch_ios_environment() {
     return 1
   fi
 
+  debug "Found iOS simulator device ${device_id}"
   info "Launching ${APP_NAME} on iOS simulator (${device_id})"
   run_flutter_run -d "${device_id}"
   return 0
@@ -1055,6 +1106,7 @@ launch_android_environment() {
     return 1
   fi
 
+  debug "Found Android emulator device ${device_id}"
   info "Launching ${APP_NAME} on Android emulator (${device_id})"
   run_flutter_run -d "${device_id}"
   return 0
@@ -1062,6 +1114,7 @@ launch_android_environment() {
 
 auto_launch_default_environment() {
   info "Preparing development environment (autostart)"
+  log_plain "[INFO] Log file: ${LOG_FILE}"
 
   if launch_ios_environment; then
     return 0
@@ -1072,6 +1125,7 @@ auto_launch_default_environment() {
   fi
 
   warn "Falling back to Chrome (web)"
+  debug "Launching Chrome because native targets were unavailable"
   run_flutter_run -d chrome
 }
 
@@ -1361,6 +1415,7 @@ show_main_menu() {
 main() {
   cd "${PROJECT_ROOT}"
   print_header
+  info "Session log: ${LOG_FILE}"
 
   local choice has_install auto_launch_done=false
   while true; do

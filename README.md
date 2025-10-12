@@ -94,6 +94,7 @@ What `start.sh` does:
   - After installation: `[1] Launch Developer Menu` (run app, tests, analyzer, doctor), `[2] Emulator Launcher` (guided simulator/emulator workflow for Chrome/iOS/Android), `[3] Install/Update Dependencies`, `[4] Re-install RestockR Dev Kit`, `[5] Exit.
 - Runs self-diagnosis on required tooling and offers guided repair/installation flows (Homebrew/snap/apt) where possible.
 - Summarises connected devices, lists available emulators, autogenerates/boots default iOS & Android simulators when none exist, and launches RestockR automatically (falling back to Chrome when native targets aren’t available).
+- Streams a detailed log to `.restockr_logs/start_<timestamp>.log` so you can review each step or share traces when debugging.
 - Provides a quick-start checklist (start emulator → run app → update `env.json`) each time the developer menu opens.
 
 ### Build for Release
