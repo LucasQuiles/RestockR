@@ -47,6 +47,7 @@ debug() {
 log_plain "=== RestockR start.sh log ${LOG_TIMESTAMP} ==="
 
 IOS_TOOLS_AVAILABLE=false
+IOS_TOOLS_CHECKED=false
 
 TERM_COLS=80
 update_term_cols() {
@@ -318,6 +319,28 @@ check_xcode_toolchain() {
   return 0
 }
 
+ensure_ios_toolchain_status() {
+  if [[ "${IOS_TOOLS_CHECKED}" == true ]]; then
+    debug "iOS toolchain status already checked: ${IOS_TOOLS_AVAILABLE}"
+    if [[ "${IOS_TOOLS_AVAILABLE}" == true ]]; then
+      return 0
+    fi
+    return 1
+  fi
+
+  if check_xcode_toolchain; then
+    IOS_TOOLS_AVAILABLE=true
+    IOS_TOOLS_CHECKED=true
+    debug "iOS toolchain confirmed available"
+    return 0
+  fi
+
+  IOS_TOOLS_AVAILABLE=false
+  IOS_TOOLS_CHECKED=true
+  debug "iOS toolchain not available"
+  return 1
+}
+
 ensure_structure() {
   info "Validating project structure"
   local required_items missing
@@ -539,12 +562,10 @@ diagnose_dependencies() {
     ok "Flutter self-check passed"
   fi
 
-  if check_xcode_toolchain; then
-    IOS_TOOLS_AVAILABLE=true
+  if ensure_ios_toolchain_status; then
     debug "iOS toolchain available: simctl ready"
   else
-    IOS_TOOLS_AVAILABLE=false
-    debug "iOS toolchain unavailable; autostart will skip native simulator"
+    warn "iOS tooling unavailable; automatic iOS simulator launch will be skipped until installed."
   fi
 }
 
@@ -1525,6 +1546,7 @@ main() {
     fi
 
     if $has_install && [[ "${auto_launch_done}" == false ]]; then
+      ensure_ios_toolchain_status || true
       auto_launch_default_environment || true
       auto_launch_done=true
     fi
