@@ -590,6 +590,108 @@ run_flutter_command() {
   fi
 }
 
+detect_ruby_version() {
+  if ! command -v ruby >/dev/null 2>&1; then
+    return 1
+  fi
+  local raw
+  raw="$(ruby --version 2>/dev/null | awk '{print $2}' || true)"
+  if [[ -z "${raw}" ]]; then
+    return 1
+  fi
+  raw="${raw%%p*}"
+  printf "%s" "${raw}"
+  return 0
+}
+
+refresh_cocoapods_status() {
+  if command -v pod >/dev/null 2>&1; then
+    local pod_version
+    pod_version="$(pod --version 2>/dev/null || true)"
+    COCOAPODS_AVAILABLE=true
+    if [[ -n "${pod_version}" ]]; then
+      debug "CocoaPods version ${pod_version} detected"
+      log_plain "[OK] CocoaPods ${pod_version} detected"
+    else
+      debug "CocoaPods detected (version unavailable)"
+      log_plain "[OK] CocoaPods detected"
+    fi
+    return 0
+  fi
+  COCOAPODS_AVAILABLE=false
+  return 1
+}
+
+install_cocoapods_with_brew() {
+  if ! command -v brew >/dev/null 2>&1; then
+    return 1
+  fi
+
+  info "Attempting CocoaPods install via Homebrew (brew install cocoapods). This may take a few minutes."
+  log_plain "[ACTION] brew install cocoapods"
+
+  if brew list cocoapods >/dev/null 2>&1; then
+    ok "CocoaPods already installed via Homebrew."
+    return 0
+  fi
+
+  if brew install cocoapods; then
+    ok "CocoaPods installed via Homebrew."
+    return 0
+  fi
+
+  warn "Homebrew installation failed. Trying RubyGems next."
+  return 1
+}
+
+install_cocoapods_with_gem() {
+  if ! command -v gem >/dev/null 2>&1; then
+    warn "RubyGems not found; install Xcode Command Line Tools or Ruby and retry."
+    return 1
+  fi
+
+  local ruby_version gem_args status gem_log
+  ruby_version="$(detect_ruby_version || true)"
+  gem_args=(--no-document)
+  gem_log="${LOG_DIR}/cocoapods_gem_install_${LOG_TIMESTAMP}.log"
+
+  if [[ -n "${ruby_version}" ]]; then
+    if version_ge "${ruby_version}" "3.1.0"; then
+      info "Installing CocoaPods via RubyGems (latest release). This can take several minutes."
+    else
+      info "Installing CocoaPods via RubyGems (compatibility release for Ruby ${ruby_version})."
+      gem_args+=(-v "1.15.2")
+    fi
+  else
+    info "Installing CocoaPods via RubyGems (version auto-selected)."
+  fi
+
+  log_plain "[ACTION] sudo gem install cocoapods ${gem_args[*]}"
+
+  if sudo gem install cocoapods "${gem_args[@]}" 2>&1 | tee -a "${gem_log}"; then
+    ok "CocoaPods installed via RubyGems."
+    return 0
+  fi
+
+  status=$?
+  warn "RubyGems installation failed (exit ${status}). Inspect ${gem_log} for details."
+
+  if [[ -f "${gem_log}" ]] && grep -q "securerandom requires Ruby version >= 3.1.0" "${gem_log}"; then
+    warn "Detected securerandom compatibility issue with the bundled Ruby."
+    info "Installing securerandom 0.3.2 and retrying CocoaPods installation."
+    log_plain "[ACTION] sudo gem install securerandom -v 0.3.2 --no-document"
+    if sudo gem install securerandom -v 0.3.2 --no-document 2>&1 | tee -a "${gem_log}"; then
+      if sudo gem install cocoapods "${gem_args[@]}" 2>&1 | tee -a "${gem_log}"; then
+        ok "CocoaPods installed via RubyGems after securerandom patch."
+        return 0
+      fi
+    fi
+    warn "Retry after installing securerandom failed."
+  fi
+
+  return 1
+}
+
 ensure_cocoapods() {
   if [[ "$(uname -s)" != "Darwin" ]]; then
     return 0
@@ -600,29 +702,50 @@ ensure_cocoapods() {
     if [[ "${COCOAPODS_AVAILABLE}" == true ]]; then
       return 0
     fi
+    if refresh_cocoapods_status; then
+      ok "CocoaPods ready."
+      COCOAPODS_CHECKED=true
+      return 0
+    fi
     return 1
+  fi
+
+  if refresh_cocoapods_status; then
+    ok "CocoaPods ready."
+    COCOAPODS_CHECKED=true
+    return 0
   fi
 
   COCOAPODS_CHECKED=true
 
-  if command -v pod >/dev/null 2>&1; then
-    COCOAPODS_AVAILABLE=true
-    debug "Detected CocoaPods binary"
-    return 0
-  fi
-
   warn "CocoaPods not installed. iOS plugins require CocoaPods."
   log_plain "[ACTION] Install CocoaPods via 'sudo gem install cocoapods' or Homebrew 'brew install cocoapods'."
-  read -r -p "Install CocoaPods now with 'sudo gem install cocoapods'? [y/N] " resp || true
+  read -r -p "Attempt automatic CocoaPods repair now? [Y/n] " resp || true
   resp="${resp,,}"
-  if [[ "${resp}" == "y" || "${resp}" == "yes" ]]; then
-    info "Installing CocoaPods (requires sudo)."
-    if sudo gem install cocoapods --no-document; then
-      ok "CocoaPods installed successfully."
-      COCOAPODS_AVAILABLE=true
+  if [[ -z "${resp}" || "${resp}" == "y" || "${resp}" == "yes" ]]; then
+    local install_success=false
+
+    if install_cocoapods_with_brew; then
+      install_success=true
+    fi
+
+    if [[ "${install_success}" == false ]]; then
+      if install_cocoapods_with_gem; then
+        install_success=true
+      fi
+    fi
+
+    hash -r
+    if refresh_cocoapods_status; then
+      ok "CocoaPods ready."
       return 0
+    fi
+
+    if [[ "${install_success}" == true ]]; then
+      warn "Installation steps completed but CocoaPods command not found on PATH."
+      warn "Check that /usr/local/bin or the Homebrew prefix is in your shell PATH."
     else
-      warn "Automatic CocoaPods installation failed. Run 'sudo gem install cocoapods' manually."
+      warn "Automatic CocoaPods repair did not succeed. Run 'brew install cocoapods' or 'sudo gem install cocoapods' manually."
     fi
   fi
 
@@ -1375,12 +1498,18 @@ auto_launch_default_environment() {
   info "Preparing development environment (autostart)"
   log_plain "[INFO] Log file: ${LOG_FILE}"
 
-  if [[ "${IOS_TOOLS_AVAILABLE}" == true && "${COCOAPODS_AVAILABLE}" == true ]]; then
-    if launch_ios_environment; then
-      return 0
+  if [[ "${IOS_TOOLS_AVAILABLE}" == true ]]; then
+    if [[ "${COCOAPODS_AVAILABLE}" == true ]]; then
+      if launch_ios_environment; then
+        return 0
+      fi
+    else
+      warn "CocoaPods missing; unable to auto-launch iOS. Run option [3] to install dependencies first."
+      log_plain "[WARN] Autostart aborted: CocoaPods unavailable."
+      return 1
     fi
   else
-    debug "Skipping iOS autolaunch; IOS_TOOLS_AVAILABLE=${IOS_TOOLS_AVAILABLE} COCOAPODS_AVAILABLE=${COCOAPODS_AVAILABLE}"
+    debug "Skipping iOS autolaunch; IOS_TOOLS_AVAILABLE=${IOS_TOOLS_AVAILABLE}"
   fi
 
   if launch_android_environment; then
