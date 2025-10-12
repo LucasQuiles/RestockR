@@ -93,7 +93,7 @@ What `start.sh` does:
   - First run: `[1] Install RestockR Dev Kit` verifies the project structure, recreates `env.json` if missing, checks Flutter/Dart/git, and runs `flutter pub get`.
   - After installation: `[1] Launch Developer Menu` (run app, tests, analyzer, doctor), `[2] Emulator Launcher` (guided simulator/emulator workflow for Chrome/iOS/Android), `[3] Install/Update Dependencies`, `[4] Re-install RestockR Dev Kit`, `[5] Exit.
 - Runs self-diagnosis on required tooling and offers guided repair/installation flows (Homebrew/snap/apt) where possible.
-- Summarises connected devices, lists available emulators, autogenerates default iOS/Android emulators when none exist, and can open the iOS Simulator or Android Studio Device Manager with contextual instructions.
+- Summarises connected devices, lists available emulators, autogenerates/boots default iOS & Android simulators when none exist, and launches RestockR automatically (falling back to Chrome when native targets aren’t available).
 - Provides a quick-start checklist (start emulator → run app → update `env.json`) each time the developer menu opens.
 
 ### Build for Release

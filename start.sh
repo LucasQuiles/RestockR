@@ -476,7 +476,7 @@ run_flutter_doctor() {
 }
 
 run_flutter_run() {
-  run_flutter_command "Launching ${APP_NAME}" flutter run
+  run_flutter_command "Launching ${APP_NAME}" flutter run "$@"
 }
 
 run_flutter_test() {
@@ -874,55 +874,12 @@ create_ios_simulator() {
     return 1
   fi
 
-  local runtimes_json devtypes_json has_python=false
-  runtimes_json="$(xcrun simctl list runtimes --json 2>/dev/null || true)"
-  devtypes_json="$(xcrun simctl list devicetypes --json 2>/dev/null || true)"
-  if command -v python3 >/dev/null 2>&1; then
-    has_python=true
-  fi
-
-  local runtime_id="" device_id=""
-  if [[ -n "${runtimes_json}" && -n "${devtypes_json}" && "${has_python}" == true ]]; then
-    runtime_id="$(SIMCTL_JSON="${runtimes_json}" python3 - <<'PY' 2>/dev/null
-import json, os
-payload = os.environ.get("SIMCTL_JSON", "")
-try:
-    data = json.loads(payload)
-except Exception:
-    data = {}
-runtimes = [
-    r for r in data.get("runtimes", [])
-    if r.get("available") and r.get("identifier", "").startswith("com.apple.CoreSimulator.SimRuntime.iOS")
-]
-if not runtimes:
-    raise SystemExit(0)
-runtimes.sort(key=lambda r: r.get("version") or r.get("identifier"), reverse=True)
-print(runtimes[0]["identifier"])
-PY
-    )"
-    runtime_id="${runtime_id//$'\n'/}"
-    device_id="$(SIMCTL_JSON="${devtypes_json}" python3 - <<'PY' 2>/dev/null
-import json, os
-payload = os.environ.get("SIMCTL_JSON", "")
-try:
-    data = json.loads(payload)
-except Exception:
-    data = {}
-devices = [
-    d for d in data.get("devicetypes", [])
-    if "iPhone" in (d.get("name") or "")
-]
-if not devices:
-    raise SystemExit(0)
-devices.sort(key=lambda d: d.get("name"), reverse=True)
-print(devices[0]["identifier"])
-PY
-    )"
-    device_id="${device_id//$'\n'/}"
-  fi
+  local runtime_id device_id
+  runtime_id="$(xcrun simctl list runtimes 2>/dev/null | sed -n 's/.* - \(com\.apple\.CoreSimulator\.SimRuntime\.iOS-[^ ]*\) (.*/\1/p' | head -n1)"
+  device_id="$(xcrun simctl list devicetypes 2>/dev/null | sed -n 's/.*(\(com\.apple\.CoreSimulator\.SimDeviceType\.iPhone[^)]*\)).*/\1/p' | head -n1)"
 
   if [[ -z "${runtime_id}" ]]; then
-    runtime_id="$(xcrun simctl list runtimes 2>/dev/null | grep -m1 -o 'com.apple.CoreSimulator.SimRuntime.iOS-[0-9.-]*' || true)"
+    runtime_id="com.apple.CoreSimulator.SimRuntime.iOS-18-0"
   fi
   if [[ -z "${device_id}" ]]; then
     device_id="com.apple.CoreSimulator.SimDeviceType.iPhone-15"
@@ -981,6 +938,141 @@ create_android_emulator() {
 
   warn "Failed to auto-create Android emulator."
   return 1
+}
+
+get_device_id_by_platform() {
+  local platform="$1"
+  local json
+
+  json="$(flutter devices --machine 2>/dev/null || echo "[]")"
+
+  if command -v python3 >/dev/null 2>&1; then
+    local device_id
+    device_id="$(RESTOCKR_JSON="${json}" TARGET_PLATFORM="${platform}" python3 -c 'import json, os; payload=os.environ.get("RESTOCKR_JSON","[]"); target=os.environ.get("TARGET_PLATFORM","").lower();
+try:
+    devices=json.loads(payload)
+except Exception:
+    devices=[]
+for device in devices:
+    if not device.get("ephemeral"):
+        continue
+    plat=(device.get("platform") or "").lower()
+    tar=(device.get("targetPlatform") or "").lower()
+    if not target or target in plat or target in tar:
+        dev_id=(device.get("id") or "").strip()
+        if dev_id:
+            print(dev_id, end="")
+            break' 2>/dev/null)"
+    if [[ -n "${device_id}" ]]; then
+      echo "${device_id}"
+      return 0
+    fi
+  fi
+
+  local text
+  text="$(flutter devices 2>/dev/null || true)"
+  if [[ -n "${text}" ]]; then
+    local id
+    case "${platform}" in
+      ios)
+        id="$(echo "${text}" | awk -F '•' '/iOS/ {gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2; exit}')"
+        ;;
+      android)
+        id="$(echo "${text}" | awk -F '•' '/android/i {gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2; exit}')"
+        ;;
+      *)
+        id="$(echo "${text}" | awk -F '•' 'NR==1 {gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2; exit}')"
+        ;;
+    esac
+    if [[ -n "${id}" ]]; then
+      echo "${id}"
+      return 0
+    fi
+  fi
+
+  return 1
+}
+
+wait_for_device() {
+  local platform="$1"
+  local attempts="${2:-45}"
+  local delay="${3:-2}"
+  local device_id=""
+
+  for ((i = 0; i < attempts; i++)); do
+    if device_id="$(get_device_id_by_platform "${platform}")"; then
+      if [[ -n "${device_id}" ]]; then
+        echo "${device_id}"
+        return 0
+      fi
+    fi
+    sleep "${delay}"
+  done
+  return 1
+}
+
+launch_ios_environment() {
+  if [[ "$(uname -s)" != "Darwin" ]]; then
+    return 1
+  fi
+  if ! command -v xcodebuild >/dev/null 2>&1; then
+    return 1
+  fi
+
+  ensure_ios_simulator || true
+  open_simulator_app || true
+
+  info "Waiting for iOS simulator to boot..."
+  local device_id
+  if ! device_id="$(wait_for_device "ios" 60 2)"; then
+    warn "No iOS simulator detected after waiting."
+    return 1
+  fi
+
+  info "Launching ${APP_NAME} on iOS simulator (${device_id})"
+  run_flutter_run -d "${device_id}"
+  return 0
+}
+
+launch_android_environment() {
+  local has_android=false
+  if [[ -d "/Applications/Android Studio.app" ]] || [[ -n "${ANDROID_HOME:-}" ]]; then
+    has_android=true
+  fi
+  if ! $has_android; then
+    return 1
+  fi
+
+  create_android_emulator || true
+
+  info "Starting Android emulator (restockr_avd)"
+  flutter emulators --launch restockr_avd >/dev/null 2>&1 || true
+
+  info "Waiting for Android emulator to boot..."
+  local device_id
+  if ! device_id="$(wait_for_device "android" 90 3)"; then
+    warn "Android emulator not ready."
+    return 1
+  fi
+
+  info "Launching ${APP_NAME} on Android emulator (${device_id})"
+  run_flutter_run -d "${device_id}"
+  return 0
+}
+
+auto_launch_default_environment() {
+  info "Preparing development environment (autostart)"
+
+  if launch_ios_environment; then
+    return 0
+  fi
+
+  if launch_android_environment; then
+    return 0
+  fi
+
+  warn "Falling back to Chrome (web)"
+  run_flutter_run -d chrome
 }
 
 launch_emulator_menu() {
@@ -1239,6 +1331,7 @@ perform_install() {
   run_pub_get
   mark_install
   ok "${APP_NAME} Dev Kit ready."
+  auto_launch_default_environment || true
   post_install_menu
 }
 
@@ -1269,11 +1362,16 @@ main() {
   cd "${PROJECT_ROOT}"
   print_header
 
-  local choice has_install
+  local choice has_install auto_launch_done=false
   while true; do
     has_install=false
     if check_install_status; then
       has_install=true
+    fi
+
+    if $has_install && [[ "${auto_launch_done}" == false ]]; then
+      auto_launch_default_environment || true
+      auto_launch_done=true
     fi
 
     show_main_menu
@@ -1294,6 +1392,7 @@ main() {
           ;;
         4)
           perform_install "reinstall"
+          auto_launch_done=true
           ;;
         5|"")
           break
@@ -1306,6 +1405,7 @@ main() {
       case "${choice}" in
         1)
           perform_install "install"
+          auto_launch_done=true
           ;;
         2|"")
           break
