@@ -39,15 +39,16 @@ log_plain() {
 
 debug() {
   if [[ "${DEBUG_MODE}" == true ]]; then
-    printf "%b[DEBUG]%b %s\n" "${DIM}${BLUE}" "${RESET}" "$1"
-    log_plain "[DEBUG] $1"
+    printf "%b[DEBUG]%b %s\n" "${DIM}${BLUE}" "${RESET}" "$1" >&2
   fi
+  log_plain "[DEBUG] $1"
 }
 
 log_plain "=== RestockR start.sh log ${LOG_TIMESTAMP} ==="
 
 IOS_TOOLS_AVAILABLE=false
 IOS_TOOLS_CHECKED=false
+IOS_ACTIVE_DEVICE=""
 
 TERM_COLS=80
 update_term_cols() {
@@ -1005,14 +1006,34 @@ create_ios_simulator() {
   fi
 
   local runtime_id device_id
-  runtime_id="$(xcrun simctl list runtimes 2>/dev/null | sed -n 's/.* - \(com\.apple\.CoreSimulator\.SimRuntime\.iOS-[^ ]*\) (.*/\1/p' | head -n1)"
-  device_id="$(xcrun simctl list devicetypes 2>/dev/null | sed -n 's/.*(\(com\.apple\.CoreSimulator\.SimDeviceType\.iPhone[^)]*\)).*/\1/p' | head -n1)"
+  if command -v python3 >/dev/null 2>&1; then
+    runtime_id="$(xcrun simctl list runtimes --json 2>/dev/null | python3 -c 'import json,sys
+try:
+    data=json.load(sys.stdin)
+except Exception:
+    data={}
+runtimes=[r for r in data.get("runtimes", []) if r.get("available") and (r.get("identifier") or "").startswith("com.apple.CoreSimulator.SimRuntime.iOS")]
+if not runtimes:
+    sys.exit(1)
+runtimes.sort(key=lambda r: r.get("version") or r.get("identifier"), reverse=True)
+sys.stdout.write(runtimes[0]["identifier"])')"
+    device_id="$(xcrun simctl list devicetypes --json 2>/dev/null | python3 -c 'import json,sys
+try:
+    data=json.load(sys.stdin)
+except Exception:
+    data={}
+devices=[d for d in data.get("devicetypes", []) if "iPhone" in (d.get("name") or "")]
+if not devices:
+    sys.exit(1)
+devices.sort(key=lambda d: d.get("name"))
+sys.stdout.write(devices[-1]["identifier"])')"
+  fi
 
   if [[ -z "${runtime_id}" ]]; then
-    runtime_id="com.apple.CoreSimulator.SimRuntime.iOS-18-0"
+    runtime_id="$(xcrun simctl list runtimes 2>/dev/null | awk -F'[() ]+' '/iOS/{for(i=1;i<=NF;i++){if($i~/com\.apple\.CoreSimulator\.SimRuntime\.iOS/){print $i; exit}}}')"
   fi
   if [[ -z "${device_id}" ]]; then
-    device_id="com.apple.CoreSimulator.SimDeviceType.iPhone-15"
+    device_id="$(xcrun simctl list devicetypes 2>/dev/null | awk -F'[()]+' '/iPhone/{print $2; exit}')"
   fi
 
   if [[ -z "${runtime_id}" || -z "${device_id}" ]]; then
@@ -1046,14 +1067,67 @@ ensure_ios_simulator() {
     debug "ensure_ios_simulator exiting because xcrun missing"
     return 1
   fi
+  local device_id=""
 
-  local existing
-  existing="$(xcrun simctl list devices available 2>/dev/null | grep -i 'iPhone' || true)"
-  if [[ -n "${existing}" ]]; then
-    return 0
+  if command -v python3 >/dev/null 2>&1; then
+    device_id="$(xcrun simctl list devices --json 2>/dev/null | python3 -c 'import json,sys
+try:
+    data=json.load(sys.stdin)
+except Exception:
+    data={}
+for runtime in data.get("devices", {}).values():
+    for dev in runtime:
+        if dev.get("availability", "(available)").endswith("(available)") or dev.get("isAvailable"):
+            name=dev.get("name") or ""
+            if "iPhone" in name:
+                sys.stdout.write(dev.get("udid", ""))
+                raise SystemExit
+')"
   fi
 
-  create_ios_simulator
+  if [[ -z "${device_id}" ]]; then
+    device_id="$(xcrun simctl list devices available 2>/dev/null | awk -F '[() ]+' '/iPhone/{print $2; exit}')"
+  fi
+
+  if [[ -z "${device_id}" ]]; then
+    debug "No existing iPhone simulators detected; attempting to create one"
+    if ! create_ios_simulator; then
+      return 1
+    fi
+    sleep 1
+    if command -v python3 >/dev/null 2>&1; then
+      device_id="$(xcrun simctl list devices --json 2>/dev/null | python3 -c 'import json,sys
+try:
+    data=json.load(sys.stdin)
+except Exception:
+    data={}
+for runtime in data.get("devices", {}).values():
+    for dev in runtime:
+        if dev.get("availability", "(available)").endswith("(available)") or dev.get("isAvailable"):
+            name=dev.get("name") or ""
+            if "iPhone" in name:
+                sys.stdout.write(dev.get("udid", ""))
+                raise SystemExit
+')"
+    fi
+  fi
+
+  if [[ -z "${device_id}" ]]; then
+    warn "Unable to locate an iPhone simulator after creation."
+    return 1
+  fi
+
+  debug "ensure_ios_simulator using device ${device_id}"
+  if ! xcrun simctl bootstatus "${device_id}" 2>/dev/null | grep -q "Booted"; then
+    debug "Booting simulator ${device_id}"
+    xcrun simctl boot "${device_id}" >/dev/null 2>&1 || true
+    xcrun simctl bootstatus "${device_id}" -b >/dev/null 2>&1 || true
+  else
+    debug "Simulator ${device_id} already booted"
+  fi
+
+  IOS_ACTIVE_DEVICE="${device_id}"
+  return 0
 }
 
 create_android_emulator() {
@@ -1178,13 +1252,18 @@ launch_ios_environment() {
     debug "open_simulator_app invocation failed"
   fi
 
-  info "Waiting for iOS simulator to boot..."
-  local device_id
-  if ! device_id="$(wait_for_device "ios" 60 2)"; then
-    warn "No iOS simulator detected after waiting."
-    return 1
+  local device_id="${IOS_ACTIVE_DEVICE}"
+  if [[ -z "${device_id}" ]]; then
+    info "Waiting for iOS simulator to boot..."
+    if ! device_id="$(wait_for_device "ios" 60 2)"; then
+      warn "No iOS simulator detected after waiting."
+      return 1
+    fi
+  else
+    debug "Using cached iOS simulator device ${device_id}"
   fi
 
+  IOS_ACTIVE_DEVICE="${device_id}"
   debug "Found iOS simulator device ${device_id}"
   info "Launching ${APP_NAME} on iOS simulator (${device_id})"
   run_flutter_run -d "${device_id}"
