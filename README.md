@@ -1,6 +1,6 @@
 # RestockR
 
-RestockR is a Flutter application for collectors and retail operators who need to stay ahead of hot product restocks. The app combines live inventory signals, watchlist management, and granular filtering in a clean mobile experience powered by Riverpod state management.
+RestockR is a Flutter application for collectors and retail operators who need to stay ahead of hot product restocks. The app combines live inventory signals, watchlist management, and granular filtering in a clean mobile experience powered by Riverpod state management. It was put together quietly by trainers who prefer to stay pseudonymous but still appreciate the folks who keep the community vibrant.
 
 ---
 
@@ -133,6 +133,14 @@ The following issues are currently tracked and should be addressed before a prod
 2. Expand alerting with scheduled push notifications and store-specific thresholds.  
 3. Add integration tests for navigation flows (splash → login → monitor → profile).  
 4. Build a settings export/import flow so power users can share configurations.
+
+---
+
+## Community Notes
+
+- Thanks to the collectors and trainers, Emerald alerts, and Chef Wendell for keeping the feed lively.
+- Feedback, pull stories, and gentle rivalry are welcome—just keep it about the hunt, not the hunters.
+- If you spot bugs or want to contribute, open an issue or PR and drop your favorite starter in the description so we know you’re one of us.
 
 ---
 
