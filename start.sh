@@ -31,7 +31,7 @@ LOG_FILE="${LOG_DIR}/start_${LOG_TIMESTAMP}.log"
 mkdir -p "${LOG_DIR}"
 : > "${LOG_FILE}"
 
-DEBUG_MODE="${RESTOCKR_DEBUG:-false}"
+DEBUG_MODE="${RESTOCKR_DEBUG:-true}"
 
 log_plain() {
   printf "%s\n" "$1" >> "${LOG_FILE}"
@@ -938,6 +938,8 @@ ensure_ios_simulator() {
     return 1
   fi
   if ! command -v xcrun >/dev/null 2>&1; then
+    warn "xcrun (Xcode Command Line Tools) not found. Install Xcode or run 'xcode-select --install'."
+    debug "ensure_ios_simulator exiting because xcrun missing"
     return 1
   fi
 
