@@ -16,6 +16,7 @@ class ProductWatchlistScreen extends ConsumerStatefulWidget {
 class ProductWatchlistScreenState
     extends ConsumerState<ProductWatchlistScreen> {
   GlobalKey<NavigatorState> navigatorKey = GlobalKey();
+  int _selectedIndex = 3;
 
   @override
   void initState() {
@@ -71,15 +72,21 @@ class ProductWatchlistScreenState
       ),
     ];
 
-    int selectedIndex = 3;
-
     return CustomBottomBar(
       bottomBarItemList: bottomBarItemList,
-      selectedIndex: selectedIndex,
+      selectedIndex: _selectedIndex,
       onChanged: (index) {
-        selectedIndex = index;
+        if (_selectedIndex == index) {
+          return;
+        }
+        setState(() {
+          _selectedIndex = index;
+        });
         var bottomBarItem = bottomBarItemList[index];
-        navigatorKey.currentState?.pushNamed(bottomBarItem.routeName!);
+        navigatorKey.currentState?.pushNamedAndRemoveUntil(
+          bottomBarItem.routeName!,
+          (route) => false,
+        );
       },
     );
   }

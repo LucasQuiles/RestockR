@@ -19,6 +19,7 @@ dependencies:
 dev_dependencies: 
   flutter_test:    # 🚨 CRITICAL: Required for Flutter project testing - DO NOT REMOVE
     sdk: flutter    # 🚨 CRITICAL: Required for Flutter project testing - DO NOT REMOVE
+  flutter_lints: ^3.0.1
 flutter: 
   uses-material-design: true # 🚨 CRITICAL: Required for Material icon font - DO NOT REMOVE
   assets: 

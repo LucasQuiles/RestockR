@@ -15,11 +15,12 @@ extension ResponsiveExtension on num {
 
 extension FormatExtension on double {
   double toDoubleValue({int fractionDigits = 2}) {
-    return double.parse(this.toStringAsFixed(fractionDigits));
+    return double.parse(toStringAsFixed(fractionDigits));
   }
 
   double isNonZero({num defaultValue = 0.0}) {
-    return this > 0 ? this : defaultValue.toDouble();
+    final value = this;
+    return value > 0 ? value : defaultValue.toDouble();
   }
 }
 

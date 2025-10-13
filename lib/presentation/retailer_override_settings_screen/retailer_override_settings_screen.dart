@@ -156,7 +156,7 @@ class RetailerOverrideSettingsScreenState
                           .read(retailerOverrideSettingsNotifier.notifier)
                           .toggleAutoOpen(value);
                     },
-                    activeColor: Color(0xFFEF4444),
+                    activeThumbColor: Color(0xFFEF4444),
                     activeTrackColor: Color(0xFFEF4444).withAlpha(77),
                     inactiveThumbColor: Colors.grey,
                     inactiveTrackColor: Colors.grey.withAlpha(77),
@@ -274,8 +274,6 @@ class RetailerOverrideSettingsScreenState
         children: [
           Consumer(
             builder: (context, ref, _) {
-              final state = ref.watch(retailerOverrideSettingsNotifier);
-
               ref.listen(
                 retailerOverrideSettingsNotifier,
                 (previous, current) {

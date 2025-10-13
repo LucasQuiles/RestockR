@@ -182,7 +182,6 @@ class RecheckHistoryScreenState extends ConsumerState<RecheckHistoryScreen> {
       width: double.infinity,
       child: Consumer(
         builder: (context, ref, _) {
-          final state = ref.watch(recheckHistoryNotifier);
           return CalendarDatePicker(
             initialDate: DateTime.now(),
             firstDate: DateTime(2020),

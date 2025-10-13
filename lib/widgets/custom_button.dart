@@ -88,10 +88,14 @@ class CustomButton extends StatelessWidget {
     final textAlignment = alignment ?? TextAlign.center;
     final buttonIconSize = iconSize ?? 18.0;
 
+    final buttonTextStyle = TextStyleHelper.instance.bodyTextInter.copyWith(
+      color: buttonTextColor,
+      fontSize: buttonFontSize,
+      fontWeight: buttonFontWeight,
+    );
+
     Widget buttonChild = _buildButtonContent(
-      buttonTextColor,
-      buttonFontSize,
-      buttonFontWeight,
+      buttonTextStyle,
       textAlignment,
       buttonIconSize,
     );
@@ -102,6 +106,7 @@ class CustomButton extends StatelessWidget {
           onPressed: onPressed,
           style: ElevatedButton.styleFrom(
             backgroundColor: buttonBackgroundColor,
+            foregroundColor: buttonTextColor,
             padding: buttonPadding,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(buttonBorderRadius.h),
@@ -116,6 +121,7 @@ class CustomButton extends StatelessWidget {
           onPressed: onPressed,
           style: OutlinedButton.styleFrom(
             backgroundColor: buttonBackgroundColor,
+            foregroundColor: buttonTextColor,
             padding: buttonPadding,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(buttonBorderRadius.h),
@@ -129,6 +135,7 @@ class CustomButton extends StatelessWidget {
           onPressed: onPressed,
           style: TextButton.styleFrom(
             backgroundColor: buttonBackgroundColor,
+            foregroundColor: buttonTextColor,
             padding: buttonPadding,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(buttonBorderRadius.h),
@@ -140,9 +147,7 @@ class CustomButton extends StatelessWidget {
   }
 
   Widget _buildButtonContent(
-    Color textColor,
-    double fontSize,
-    FontWeight fontWeight,
+    TextStyle textStyle,
     TextAlign textAlignment,
     double iconSize,
   ) {
@@ -160,11 +165,12 @@ class CustomButton extends StatelessWidget {
     }
 
     children.add(
-      Expanded(
+      Flexible(
         child: Text(
           text,
           textAlign: textAlignment,
-          style: TextStyleHelper.instance.bodyTextInter,
+          style: textStyle,
+          overflow: TextOverflow.ellipsis,
         ),
       ),
     );

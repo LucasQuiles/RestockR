@@ -206,12 +206,12 @@ class ProductMonitorScreenState extends ConsumerState<ProductMonitorScreen>
   Widget _buildTabBarView(BuildContext context) {
     return TabBarView(
       controller: tabController,
-      children: List.generate(7, (index) => _buildMonitorList(context)),
+      children: List.generate(7, (index) => _buildMonitorList(context, index)),
     );
   }
 
   /// Section Widget
-  Widget _buildMonitorList(BuildContext context) {
+  Widget _buildMonitorList(BuildContext context, int tabIndex) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 16.h),
       child: Consumer(
@@ -222,6 +222,19 @@ class ProductMonitorScreenState extends ConsumerState<ProductMonitorScreen>
             return Center(child: CircularProgressIndicator());
           }
 
+          final monitorItems = state.productMonitorModel?.monitorItems ?? [];
+          final filteredItems = _filterItemsForTab(monitorItems, tabIndex);
+
+          if (filteredItems.isEmpty) {
+            return Center(
+              child: Text(
+                "No products to show.",
+                style: TextStyleHelper.instance.body14MediumInter
+                    .copyWith(color: appTheme.gray_600),
+              ),
+            );
+          }
+
           return ListView.separated(
             padding: EdgeInsets.only(top: 16.h),
             physics: BouncingScrollPhysics(),
@@ -229,19 +242,28 @@ class ProductMonitorScreenState extends ConsumerState<ProductMonitorScreen>
             separatorBuilder: (context, index) {
               return SizedBox(height: 8.h);
             },
-            itemCount: state.productMonitorModel?.monitorItems?.length ?? 0,
+            itemCount: filteredItems.length,
             itemBuilder: (context, index) {
-              final model = state.productMonitorModel?.monitorItems?[index];
+              final model = filteredItems[index];
+              final originalIndex = monitorItems.indexOf(model);
               return MonitorItemWidget(
                 model: model,
                 onTapBuy: () {
                   onTapBuyButton(context, model);
                 },
                 onTapDownVote: () {
-                  ref.read(productMonitorNotifier.notifier).onDownVote(index);
+                  if (originalIndex != -1) {
+                    ref
+                        .read(productMonitorNotifier.notifier)
+                        .onDownVote(originalIndex);
+                  }
                 },
                 onTapUpVote: () {
-                  ref.read(productMonitorNotifier.notifier).onUpVote(index);
+                  if (originalIndex != -1) {
+                    ref
+                        .read(productMonitorNotifier.notifier)
+                        .onUpVote(originalIndex);
+                  }
                 },
               );
             },
@@ -264,5 +286,39 @@ class ProductMonitorScreenState extends ConsumerState<ProductMonitorScreen>
   /// Handles buy button tap
   void onTapBuyButton(BuildContext context, MonitorItemModel? model) {
     // Handle buy button tap
+  }
+
+  List<MonitorItemModel> _filterItemsForTab(
+      List<MonitorItemModel> items, int tabIndex) {
+    if (tabIndex == 0) {
+      return items;
+    }
+
+    const storeTabs = [
+      null,
+      "Target",
+      "Amazon",
+      "SamClub",
+      "BestBuy",
+      "Walmart",
+      "Costco",
+    ];
+
+    if (tabIndex < 0 || tabIndex >= storeTabs.length) {
+      return items;
+    }
+
+    final expectedStore = storeTabs[tabIndex];
+    if (expectedStore == null) {
+      return items;
+    }
+
+    return items
+        .where(
+          (element) =>
+              element.storeName?.toLowerCase() ==
+              expectedStore.toLowerCase(),
+        )
+        .toList();
   }
 }

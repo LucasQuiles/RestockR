@@ -65,7 +65,8 @@ class CustomDropdown extends StatelessWidget {
     return SizedBox(
       width: dropdownWidth,
       child: DropdownButtonFormField<String>(
-        value: value,
+        key: ValueKey<String>(value ?? '__null__'),
+        initialValue: value,
         hint: Text(
           hintText ?? "Select an option",
           style: TextStyleHelper.instance.title16SemiBoldInter

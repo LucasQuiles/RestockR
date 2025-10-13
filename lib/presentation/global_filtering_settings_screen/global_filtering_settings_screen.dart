@@ -202,7 +202,7 @@ class GlobalFilteringSettingsScreenState
                                 .read(globalFilteringSettingsNotifier.notifier)
                                 .toggleCategory(index, value);
                           },
-                          activeColor: Colors.white,
+                          activeThumbColor: Colors.white,
                           activeTrackColor: Color(0xFFEF4444),
                           inactiveThumbColor: Colors.white,
                           inactiveTrackColor: Color(0xFFE5E5E5),

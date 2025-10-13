@@ -172,7 +172,6 @@ enum ActivityType {
   none,
 }
 
-// ignore_for_file: must_be_immutable
 class ActivityItemModel extends Equatable {
   ActivityItemModel({
     this.time,

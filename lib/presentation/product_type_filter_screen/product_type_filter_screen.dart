@@ -131,30 +131,28 @@ class ProductTypeFilterScreenState
             ),
           ),
           SizedBox(height: 24.h),
-          Container(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  margin: EdgeInsets.only(left: 10.h),
-                  child: Text(
-                    'Product Type',
-                    style: TextStyle(
-                      fontSize: 14.fSize,
-                      fontFamily: 'Inter',
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFFDC2626),
-                    ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: EdgeInsets.only(left: 10.h),
+                child: Text(
+                  'Product Type',
+                  style: TextStyle(
+                    fontSize: 14.fSize,
+                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFFDC2626),
                   ),
                 ),
-                SizedBox(width: 8.h),
-                CustomImageView(
-                  imagePath: ImageConstant.imgIconsRed700,
-                  height: 20.h,
-                  width: 20.h,
-                ),
-              ],
-            ),
+              ),
+              SizedBox(width: 8.h),
+              CustomImageView(
+                imagePath: ImageConstant.imgIconsRed700,
+                height: 20.h,
+                width: 20.h,
+              ),
+            ],
           ),
           SizedBox(height: 24.h),
           Container(
