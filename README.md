@@ -57,11 +57,40 @@ RestockR lets users:
 
 ## Architecture at a Glance
 
-- **Flutter 3** application targeting Android, iOS, and web.  
-- **Riverpod** for state management with `StateNotifier` patterns (`lib/presentation/**/notifier`).  
-- **Equatable** for compact immutable state classes.  
-- **Feature-first directory structure** under `lib/presentation`, paired with reusable widgets in `lib/widgets`.  
+- **Flutter 3** application targeting Android, iOS, and web.
+- **Riverpod** for state management with `StateNotifier` patterns (`lib/presentation/**/notifier`).
+- **Equatable** for compact immutable state classes.
+- **Feature-first directory structure** under `lib/presentation`, paired with reusable widgets in `lib/widgets`.
 - Responsive layout utilities (`lib/core/utils/size_utils.dart`) for consistent sizing across devices.
+
+### Directory Structure
+
+```
+lib/
+├── core/                  # Core utilities and exports
+│   ├── app_export.dart   # Central export file for common imports
+│   └── utils/            # Size utilities, navigation, image constants
+├── presentation/          # Feature screens (feature-first architecture)
+│   ├── splash_screen/    # App initialization with animations
+│   ├── login_screen/     # Authentication flow
+│   ├── product_watchlist_screen/  # Main watchlist with tabs
+│   ├── product_monitor_screen/    # Live restock feed
+│   ├── recheck_history_screen/    # Historical timeline
+│   ├── profile_settings_screen/   # User preferences hub
+│   └── *_filter_screen/  # Various filtering options
+├── routes/               # App navigation configuration
+├── theme/                # Theme definitions and text styles
+└── widgets/              # Reusable UI components
+    ├── custom_button.dart
+    ├── custom_text_form_field.dart
+    └── custom_app_bar.dart
+```
+
+Each feature screen follows a consistent pattern:
+- `[feature]_screen.dart` - UI implementation
+- `models/` - Data models with Equatable
+- `notifier/` - StateNotifier for business logic
+- `widgets/` - Feature-specific widgets
 
 ---
 
@@ -126,6 +155,36 @@ Sensitive keys live in `env.json`:
 ```
 
 Replace these with real values before shipping. Never commit production secrets.
+
+### ⚠️ Security Best Practices
+
+**IMPORTANT:** `env.json` contains sensitive API keys and credentials.
+
+✅ **DO:**
+- Keep `env.json` in `.gitignore` (already configured)
+- Use secure file permissions (automatically set to `600` by setup scripts)
+- Store production keys in secure secret management systems
+- Rotate API keys regularly
+- Use environment-specific keys (dev/staging/prod)
+
+❌ **DON'T:**
+- Commit `env.json` to version control
+- Share `env.json` in screenshots, logs, or documentation
+- Store `env.json` in cloud-synced folders (Dropbox, Google Drive, etc.)
+- Use production API keys in development environments
+- Share your `.restockr_logs/` directory (may contain sensitive data)
+
+The setup scripts automatically set `env.json` to permission mode `600` (owner read/write only) to prevent unauthorized access. If you modify the file externally, permissions will be re-secured on next run.
+
+### Key Dependencies
+
+- **flutter_riverpod** ^2.5.1 - State management
+- **equatable** ^2.0.5 - Value equality for state models
+- **flutter_svg** ^2.0.12 - SVG rendering
+- **cached_network_image** ^3.4.1 - Image caching
+- **shared_preferences** ^2.3.3 - Local storage
+- **connectivity_plus** ^6.1.0 - Network status monitoring
+- **gradient_borders** ^1.0.2 - Custom UI styling
 
 ---
 
