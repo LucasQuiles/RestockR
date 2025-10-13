@@ -30,6 +30,53 @@ RestockR is a cross–platform Flutter client for monitoring high–demand produ
 
 ---
 
+## Product Experience Gallery
+
+### Onboarding & Authentication
+- First impressions: the animated splash transitions into a concise login form with validation messaging and password toggle.  
+  ![Splash screen](ScreenShots/SplashScreen.jpg)  
+  ![Login screen](ScreenShots/Login.jpg)
+- Successful launch confirmation on device and emulator is captured for QA reference.  
+  ![App launched successfully](ScreenShots/AppLaunchedSuccessfully.png)
+
+### Watchlists & Discovery
+- Primary watchlist view with subscription toggles and SKU detail peek.  
+  ![Watchlist subscriptions](ScreenShots/Watchlist.jpg)
+- Discovery tab enables rapid subscription to trending items.  
+  ![Discover products](ScreenShots/Watchlist_2.jpg)
+
+### Live Monitoring & Historical Insight
+- Real-time monitor cards highlight retailer, quantity, pricing, and sentiment actions.  
+  ![Monitor feed](ScreenShots/Monitor.jpg)
+- Recheck history timeline shows hour-by-hour traffic to guide restock cadences.  
+  ![Recheck history](ScreenShots/History v2.jpg)
+
+### Filters & Control Surfaces
+- Retailer, product type, and number-type filters can be combined for targeted alerts.  
+  ![Retailer filter](ScreenShots/FilterRetailer.jpg)  
+  ![Product type filter](ScreenShots/FilterProductType.jpg)  
+  ![Number type filter](ScreenShots/FilterNumberType.jpg)
+- Global filtering thresholds and overrides ensure the signal matches each operator’s tolerance.  
+  ![Global filtering](ScreenShots/GlobalFiltering.jpg)
+
+### Alerts & Profile Controls
+- Profile hub bundles alert preferences, notification toggles, and per-retailer overrides.  
+  ![Profile hub](ScreenShots/Profile_1.jpg)  
+  ![Notification & alert settings](ScreenShots/NotificationsAlerts.jpg)  
+  ![Retailer overrides](ScreenShots/RetailerSpecificOverrides.jpg)
+- Additional profile utilities (e.g., linked accounts) are staged for backend integration.  
+  ![Profile utilities](ScreenShots/Profile_2.jpg)
+
+### Developer Tooling Snapshots
+- `./start.sh` walkthrough—from invocation to quick-launch options and device detection.  
+  ![Run start script](ScreenShots/RunStartScript.png)  
+  ![Quick launch menu](ScreenShots/QuickLaunch.png)
+- iOS simulator automation and launch feedback for macOS developers.  
+  ![Launching iOS simulation](ScreenShots/LaunchiOSSimulation.png)  
+  ![iOS emulator ready](ScreenShots/iOSEmu.png)
+
+---
+
 ## Codebase Tour
 
 ```
@@ -225,4 +272,3 @@ Document the final REST/gRPC/WebSocket interface inside the repo once complete (
 - **Next Lead**: _TBD_ — please add your contact information here once the backend team takes over.
 
 Keep this README as the single source of truth for onboarding. Update it when you finalize backend endpoints, add CI/CD, or change the release process so future contributors inherit accurate guidance.
-
