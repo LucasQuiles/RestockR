@@ -22,6 +22,13 @@ class ProductMonitorScreenState extends ConsumerState<ProductMonitorScreen>
   void initState() {
     super.initState();
     tabController = TabController(length: 7, vsync: this);
+    tabController.addListener(() {
+      if (!tabController.indexIsChanging) {
+        ref
+            .read(productMonitorNotifier.notifier)
+            .onTabChanged(tabController.index);
+      }
+    });
   }
 
   @override
@@ -184,17 +191,26 @@ class ProductMonitorScreenState extends ConsumerState<ProductMonitorScreen>
             ref.read(productMonitorNotifier.notifier).onTabChanged(index);
           },
           child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 16.h, vertical: 10.h),
             margin: EdgeInsets.only(right: 8.h),
-            decoration: BoxDecoration(
-              color:
-                  isSelected ? Color(0xFFEF4444) : appTheme.transparentCustom,
-              borderRadius: BorderRadius.circular(20.h),
-            ),
-            child: Text(
-              text,
-              style: TextStyleHelper.instance.body14MediumInter.copyWith(
-                  color: isSelected ? Color(0xFFF4F4F4) : appTheme.gray_600),
+            child: AnimatedContainer(
+              duration: Duration(milliseconds: 180),
+              padding: EdgeInsets.symmetric(horizontal: 18.h, vertical: 10.h),
+              decoration: BoxDecoration(
+                color:
+                    isSelected ? appTheme.black_900 : appTheme.white_A700,
+                borderRadius: BorderRadius.circular(24.h),
+                border: Border.all(
+                  color:
+                      isSelected ? appTheme.black_900 : appTheme.gray_300,
+                  width: 1,
+                ),
+              ),
+              child: Text(
+                text,
+                style: TextStyleHelper.instance.body14MediumInter.copyWith(
+                  color: isSelected ? appTheme.white_A700 : appTheme.gray_700,
+                ),
+              ),
             ),
           ),
         );
@@ -275,17 +291,17 @@ class ProductMonitorScreenState extends ConsumerState<ProductMonitorScreen>
 
   /// Navigates to notification screen
   void onTapNotificationButton(BuildContext context) {
-    // Handle notification button tap
+    NavigatorService.pushNamed(AppRoutes.notificationsAlertsSettingsScreen);
   }
 
   /// Navigates to profile screen
   void onTapProfileButton(BuildContext context) {
-    // Handle profile button tap
+    NavigatorService.pushNamed(AppRoutes.profileSettingsScreen);
   }
 
   /// Handles buy button tap
   void onTapBuyButton(BuildContext context, MonitorItemModel? model) {
-    // Handle buy button tap
+    NavigatorService.pushNamed(AppRoutes.watchlistManagementScreen);
   }
 
   List<MonitorItemModel> _filterItemsForTab(

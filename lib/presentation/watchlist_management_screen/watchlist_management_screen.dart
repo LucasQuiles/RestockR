@@ -47,11 +47,10 @@ class WatchlistManagementScreenState
             (previous, current) {
               if (!(previous?.isUnsubscribeSuccess ?? false) &&
                   (current.isUnsubscribeSuccess ?? false)) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Successfully unsubscribed from product'),
-                    backgroundColor: appTheme.teal_600,
-                  ),
+                showAppToast(
+                  context,
+                  message: 'Successfully unsubscribed from product',
+                  variant: AppToastVariant.warning,
                 );
                 // Reset the state after showing snackbar
                 Future.delayed(Duration(milliseconds: 100), () {

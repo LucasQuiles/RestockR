@@ -16,37 +16,33 @@ class RetailerOverrideSettingsScreenState
     extends ConsumerState<RetailerOverrideSettingsScreen> {
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
-        backgroundColor: Color(0xFFF4F4F4),
-        appBar: _buildAppBar(context),
-        body: Container(
-          width: double.infinity,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Container(
-                    padding: EdgeInsets.only(
-                      top: 24.h,
-                      left: 16.h,
-                      right: 16.h,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildPokemonCenterSection(context),
-                        _buildQueueDelaySection(context),
-                        _buildReopenCooldownSection(context),
-                      ],
-                    ),
-                  ),
+    return Scaffold(
+      backgroundColor: appTheme.gray_100,
+      appBar: _buildAppBar(context),
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.only(
+                  top: 24.h,
+                  left: 16.h,
+                  right: 16.h,
+                  bottom: 24.h,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildPokemonCenterSection(context),
+                    _buildQueueDelaySection(context),
+                    _buildReopenCooldownSection(context),
+                  ],
                 ),
               ),
-              _buildSaveSection(context),
-            ],
-          ),
+            ),
+            _buildSaveSection(context),
+          ],
         ),
       ),
     );
@@ -278,11 +274,10 @@ class RetailerOverrideSettingsScreenState
                 retailerOverrideSettingsNotifier,
                 (previous, current) {
                   if (current.isSaved ?? false) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Settings saved successfully!'),
-                        backgroundColor: Color(0xFFEF4444),
-                      ),
+                    showAppToast(
+                      context,
+                      message: 'Settings saved successfully!',
+                      variant: AppToastVariant.success,
                     );
                   }
                 },

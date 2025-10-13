@@ -37,9 +37,10 @@ class AppRoutes {
       '/global_filtering_settings_screen';
 
   static const String appNavigationScreen = '/app_navigation_screen';
-  static const String initialRoute = '/';
+  static const String initialRoute = splashScreen;
 
   static Map<String, WidgetBuilder> get routes => {
+        '/': (context) => SplashScreen(),
         splashScreen: (context) => SplashScreen(),
         loginScreen: (context) => LoginScreen(),
         productMonitorScreen: (context) => ProductMonitorScreen(),
@@ -57,6 +58,5 @@ class AppRoutes {
         globalFilteringSettingsScreen: (context) =>
             GlobalFilteringSettingsScreen(),
         appNavigationScreen: (context) => AppNavigationScreen(),
-        initialRoute: (context) => AppNavigationScreen()
       };
 }

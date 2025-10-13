@@ -15,18 +15,15 @@ class ProfileSettingsScreen extends ConsumerStatefulWidget {
 class ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
-        backgroundColor: Color(0xFFF4F4F4),
-        appBar: _buildAppBar(context),
-        body: Container(
-          width: double.maxFinite,
-          child: Column(
-            children: [
-              SizedBox(height: 24.h),
-              _buildProfileContent(context),
-            ],
-          ),
+    return Scaffold(
+      backgroundColor: appTheme.gray_100,
+      appBar: _buildAppBar(context),
+      body: SafeArea(
+        child: Column(
+          children: [
+            SizedBox(height: 24.h),
+            _buildProfileContent(context),
+          ],
         ),
       ),
     );

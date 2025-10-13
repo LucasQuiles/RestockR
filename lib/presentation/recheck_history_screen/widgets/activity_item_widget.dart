@@ -17,93 +17,76 @@ class ActivityItemWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accentColor = _getAccentColor();
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: double.infinity,
+        margin: EdgeInsets.symmetric(vertical: 4.h),
+        padding: EdgeInsets.symmetric(horizontal: 16.h, vertical: 12.h),
         decoration: BoxDecoration(
-          color: _getBackgroundColor(),
+          color: appTheme.white_A700,
           borderRadius: BorderRadius.circular(16.h),
+          border: Border.all(color: appTheme.gray_300, width: 1),
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: (model.time?.length ?? 0) > 4 ? 16.h : 14.h,
-                vertical: 6.h,
-              ),
+              padding: EdgeInsets.symmetric(horizontal: 12.h, vertical: 6.h),
               decoration: BoxDecoration(
-                color: appTheme.color330000,
-                borderRadius: BorderRadius.circular(16.h),
+                color: accentColor.withAlpha((0.12 * 255).round()),
+                borderRadius: BorderRadius.circular(20.h),
               ),
               child: Text(
                 model.time ?? '',
-                style: TextStyleHelper.instance.body14MediumInter
-                    .copyWith(color: _getTimeTextColor()),
+                style: TextStyleHelper.instance.body12SemiBoldInter
+                    .copyWith(color: accentColor),
               ),
             ),
+            SizedBox(width: 12.h),
             Expanded(
-              child: Padding(
-                padding: EdgeInsets.only(left: 14.h, bottom: 6.h),
-                child: Text(
-                  model.status ?? '',
-                  style: TextStyleHelper.instance.body14MediumInter
-                      .copyWith(color: _getStatusTextColor()),
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    model.status ?? '',
+                    style: TextStyleHelper.instance.body14MediumInter
+                        .copyWith(color: appTheme.gray_900),
+                  ),
+                  if ((model.quantity ?? '').isNotEmpty)
+                    Padding(
+                      padding: EdgeInsets.only(top: 2.h),
+                      child: Text(
+                        model.quantity ?? '',
+                        style: TextStyleHelper.instance.body12MediumInter
+                            .copyWith(color: appTheme.gray_600),
+                      ),
+                    ),
+                ],
               ),
             ),
-            if (model.quantity != null)
-              Padding(
-                padding: EdgeInsets.only(right: 14.h, bottom: 6.h),
-                child: Text(
-                  model.quantity ?? '',
-                  style: TextStyleHelper.instance.body14MediumInter
-                      .copyWith(color: _getStatusTextColor()),
-                ),
-              ),
+            Icon(
+              Icons.chevron_right,
+              color: appTheme.gray_500,
+              size: 20.h,
+            ),
           ],
         ),
       ),
     );
   }
 
-  Color _getBackgroundColor() {
+  Color _getAccentColor() {
     switch (model.activityType) {
       case ActivityType.high:
-        return model.isFirstHour == true
-            ? Color(0xFF064E36)
-            : model.isSecondHour == true
-                ? Color(0xFF047852)
-                : Color(0xFF059666);
+        return appTheme.red_500;
       case ActivityType.moderate:
-        return Color(0xFF10B981);
+        return appTheme.teal_600;
       case ActivityType.none:
       default:
-        return Color(0xFF6EE7BF);
-    }
-  }
-
-  Color _getTimeTextColor() {
-    switch (model.activityType) {
-      case ActivityType.high:
-        return appTheme.whiteCustom;
-      case ActivityType.moderate:
-      case ActivityType.none:
-      default:
-        return Color(0xFF022C1E);
-    }
-  }
-
-  Color _getStatusTextColor() {
-    switch (model.activityType) {
-      case ActivityType.high:
-        return appTheme.whiteCustom;
-      case ActivityType.moderate:
-      case ActivityType.none:
-      default:
-        return Color(0xFF022C1E);
+        return appTheme.gray_600;
     }
   }
 }

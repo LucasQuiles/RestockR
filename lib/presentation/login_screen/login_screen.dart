@@ -88,18 +88,21 @@ class LoginScreenState extends ConsumerState<LoginScreen> {
                   loginNotifier,
                   (previous, current) {
                     if (current.isLoginSuccess ?? false) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Login successful')),
+                      showAppToast(
+                        context,
+                        message: 'Login successful',
+                        variant: AppToastVariant.success,
                       );
                       NavigatorService.pushNamedAndRemoveUntil(
                           AppRoutes.productWatchlistScreen);
                     }
 
                     if (current.hasError ?? false) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                            content: Text(
-                                'Login failed. Please check your credentials.')),
+                      showAppToast(
+                        context,
+                        message:
+                            'Login failed. Please check your credentials.',
+                        variant: AppToastVariant.error,
                       );
                     }
                   },
@@ -227,8 +230,10 @@ class LoginScreenState extends ConsumerState<LoginScreen> {
   /// Handles forgot password tap
   void onTapForgotPassword(BuildContext context) {
     // Navigate to forgot password screen or show dialog
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Forgot password functionality coming soon')),
+    showAppToast(
+      context,
+      message: 'Forgot password functionality coming soon',
+      variant: AppToastVariant.warning,
     );
   }
 }

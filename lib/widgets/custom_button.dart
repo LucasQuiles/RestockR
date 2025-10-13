@@ -187,7 +187,8 @@ class CustomButton extends StatelessWidget {
     }
 
     return Row(
-      mainAxisSize: MainAxisSize.min,
+      mainAxisSize: MainAxisSize.max,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: children,
     );
   }

@@ -5,12 +5,14 @@ class ProductWatchlistState extends Equatable {
   final bool? isLoading;
   final int? selectedTabIndex;
   final String? searchQuery;
+  final int? subscribedCount;
 
   ProductWatchlistState({
     this.productWatchlistModel,
     this.isLoading = false,
     this.selectedTabIndex = 0,
     this.searchQuery = '',
+    this.subscribedCount = 0,
   });
 
   @override
@@ -19,6 +21,7 @@ class ProductWatchlistState extends Equatable {
         isLoading,
         selectedTabIndex,
         searchQuery,
+        subscribedCount,
       ];
 
   ProductWatchlistState copyWith({
@@ -26,6 +29,7 @@ class ProductWatchlistState extends Equatable {
     bool? isLoading,
     int? selectedTabIndex,
     String? searchQuery,
+    int? subscribedCount,
   }) {
     return ProductWatchlistState(
       productWatchlistModel:
@@ -33,6 +37,7 @@ class ProductWatchlistState extends Equatable {
       isLoading: isLoading ?? this.isLoading,
       selectedTabIndex: selectedTabIndex ?? this.selectedTabIndex,
       searchQuery: searchQuery ?? this.searchQuery,
+      subscribedCount: subscribedCount ?? this.subscribedCount,
     );
   }
 }

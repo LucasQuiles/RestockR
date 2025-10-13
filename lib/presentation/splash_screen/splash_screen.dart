@@ -26,16 +26,16 @@ class SplashScreenState extends ConsumerState<SplashScreen>
 
   void _initializeAnimations() {
     _animationController = AnimationController(
-      duration: Duration(milliseconds: 1500),
+      duration: Duration(milliseconds: 2000),
       vsync: this,
     );
 
     _scaleAnimation = Tween<double>(
-      begin: 0.5,
-      end: 1.0,
+      begin: 0.95,
+      end: 1.05,
     ).animate(CurvedAnimation(
       parent: _animationController,
-      curve: Curves.elasticOut,
+      curve: Curves.easeInOut,
     ));
 
     _fadeAnimation = Tween<double>(
@@ -50,7 +50,7 @@ class SplashScreenState extends ConsumerState<SplashScreen>
   void _startSplashSequence() {
     _animationController.forward();
 
-    Future.delayed(Duration(milliseconds: 2500), () {
+    Future.delayed(Duration(milliseconds: 2800), () {
       if (mounted) {
         NavigatorService.pushNamedAndRemoveUntil(AppRoutes.loginScreen);
       }
@@ -65,23 +65,11 @@ class SplashScreenState extends ConsumerState<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
-        backgroundColor: appTheme.gray_100,
-        body: Container(
-          width: double.maxFinite,
-          child: Column(
-            children: [
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildLogoSection(context),
-                  ],
-                ),
-              ),
-            ],
-          ),
+    return Scaffold(
+      backgroundColor: appTheme.gray_100,
+      body: SafeArea(
+        child: Center(
+          child: _buildLogoSection(context),
         ),
       ),
     );

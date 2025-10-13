@@ -37,6 +37,90 @@ run_flutter_run() {
   run_flutter_command "Launching ${APP_NAME}" flutter run "$@"
 }
 
+update_app_icons() {
+  local icon_source="${SCRIPT_DIR}/Images/R_WhiteBG.png"
+
+  if [[ ! -f "${icon_source}" ]]; then
+    debug "App icon source not found at ${icon_source}; skipping refresh"
+    return 0
+  fi
+
+  if ! command -v sips >/dev/null 2>&1; then
+    warn "sips utility not available; skipping app icon refresh"
+    return 0
+  fi
+
+  local ios_dir="${SCRIPT_DIR}/ios/Runner/Assets.xcassets/AppIcon.appiconset"
+  if [[ -d "${ios_dir}" ]]; then
+    local ios_specs=(
+      "Icon-App-20x20@1x.png:20"
+      "Icon-App-20x20@2x.png:40"
+      "Icon-App-20x20@3x.png:60"
+      "Icon-App-29x29@1x.png:29"
+      "Icon-App-29x29@2x.png:58"
+      "Icon-App-29x29@3x.png:87"
+      "Icon-App-40x40@1x.png:40"
+      "Icon-App-40x40@2x.png:80"
+      "Icon-App-40x40@3x.png:120"
+      "Icon-App-60x60@2x.png:120"
+      "Icon-App-60x60@3x.png:180"
+      "Icon-App-76x76@1x.png:76"
+      "Icon-App-76x76@2x.png:152"
+      "Icon-App-83.5x83.5@2x.png:167"
+      "Icon-App-1024x1024@1x.png:1024"
+    )
+
+    for spec in "${ios_specs[@]}"; do
+      local name="${spec%%:*}"
+      local size="${spec##*:}"
+      local target="${ios_dir}/${name}"
+
+      if [[ ! -f "${target}" || "${icon_source}" -nt "${target}" ]]; then
+        if ! sips -s format png -z "${size}" "${size}" "${icon_source}" --out "${target}" >/dev/null 2>&1; then
+          warn "Failed to update iOS icon ${name}"
+        else
+          debug "Updated iOS icon ${name}"
+        fi
+      fi
+    done
+  else
+    debug "iOS app icon directory missing; skipping iOS icon refresh"
+  fi
+
+  local android_base="${SCRIPT_DIR}/android/app/src/main/res"
+  if [[ -d "${android_base}" ]]; then
+    local android_specs=(
+      "mipmap-mdpi/ic_launcher.png:48"
+      "mipmap-hdpi/ic_launcher.png:72"
+      "mipmap-xhdpi/ic_launcher.png:96"
+      "mipmap-xxhdpi/ic_launcher.png:144"
+      "mipmap-xxxhdpi/ic_launcher.png:192"
+    )
+
+    for spec in "${android_specs[@]}"; do
+      local rel="${spec%%:*}"
+      local size="${spec##*:}"
+      local target="${android_base}/${rel}"
+      local dir
+      dir="$(dirname "${target}")"
+
+      if [[ ! -d "${dir}" ]]; then
+        continue
+      fi
+
+      if [[ ! -f "${target}" || "${icon_source}" -nt "${target}" ]]; then
+        if ! sips -s format png -z "${size}" "${size}" "${icon_source}" --out "${target}" >/dev/null 2>&1; then
+          warn "Failed to update Android icon ${rel}"
+        else
+          debug "Updated Android icon ${rel}"
+        fi
+      fi
+    done
+  else
+    debug "Android resource directory missing; skipping Android icon refresh"
+  fi
+}
+
 # ============================================================================
 # GUIDED QUICK LAUNCH
 # ============================================================================
@@ -519,6 +603,8 @@ main() {
     has_install="false"
     warn "RestockR Dev Kit is not yet installed"
   fi
+
+  update_app_icons
 
   # Go straight to developer menu if installed
   if [[ "${has_install}" == "true" ]]; then

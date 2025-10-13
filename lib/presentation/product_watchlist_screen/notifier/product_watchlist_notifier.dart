@@ -14,14 +14,24 @@ final productWatchlistNotifier = StateNotifierProvider.autoDispose<
 );
 
 class ProductWatchlistNotifier extends StateNotifier<ProductWatchlistState> {
-  ProductWatchlistNotifier(ProductWatchlistState state) : super(state) {
+  ProductWatchlistNotifier(ProductWatchlistState state)
+      : _allItems = List<WatchlistItemModel>.from(
+            state.productWatchlistModel?.watchlistItems ?? []),
+        super(state) {
     initialize();
   }
+
+  List<WatchlistItemModel> _allItems;
 
   void initialize() {
     state = state.copyWith(
       isLoading: false,
       selectedTabIndex: 0,
+      productWatchlistModel: state.productWatchlistModel?.copyWith(
+        watchlistItems: _allItems,
+      ),
+      subscribedCount:
+          _allItems.where((item) => item.isSubscribed ?? false).length,
     );
   }
 
@@ -31,37 +41,46 @@ class ProductWatchlistNotifier extends StateNotifier<ProductWatchlistState> {
     );
   }
 
-  void toggleSubscription(int index) {
-    final items = state.productWatchlistModel?.watchlistItems ?? [];
-    if (index < items.length) {
-      final updatedItems = List<WatchlistItemModel>.from(
-          items); // Modified: Fixed type casting to List<WatchlistItemModel>
-      final currentItem = updatedItems[index];
-      updatedItems[index] = currentItem.copyWith(
-        isSubscribed: !(currentItem.isSubscribed ?? false),
-      );
+  void toggleSubscription(WatchlistItemModel item) {
+    _allItems = _allItems.map((existing) {
+      if (existing.sku == item.sku) {
+        return existing.copyWith(
+          isSubscribed: !(existing.isSubscribed ?? false),
+        );
+      }
+      return existing;
+    }).toList();
 
-      final updatedModel = state.productWatchlistModel?.copyWith(
-        watchlistItems: updatedItems,
-      );
-
-      state = state.copyWith(
-        productWatchlistModel: updatedModel,
-      );
-    }
+    _updateVisibleItems();
   }
 
   void searchProducts(String query) {
     state = state.copyWith(
       searchQuery: query,
-      isLoading: true,
     );
 
-    // Simulate search delay
-    Future.delayed(Duration(milliseconds: 500), () {
-      state = state.copyWith(
-        isLoading: false,
-      );
-    });
+    _updateVisibleItems();
+  }
+
+  void _updateVisibleItems() {
+    final query = (state.searchQuery ?? '').trim().toLowerCase();
+
+    final filteredItems = query.isEmpty
+        ? _allItems
+        : _allItems
+            .where(
+              (item) =>
+                  (item.productName ?? '').toLowerCase().contains(query) ||
+                  (item.sku ?? '').toLowerCase().contains(query),
+            )
+            .toList();
+
+    state = state.copyWith(
+      isLoading: false,
+      productWatchlistModel:
+          state.productWatchlistModel?.copyWith(watchlistItems: filteredItems),
+      subscribedCount:
+          _allItems.where((item) => item.isSubscribed ?? false).length,
+    );
   }
 }

@@ -17,16 +17,16 @@ class GlobalFilteringSettingsScreenState
     extends ConsumerState<GlobalFilteringSettingsScreen> {
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
-        backgroundColor: Color(0xFFF4F4F4),
-        appBar: _buildAppBar(context),
-        body: Container(
-          width: double.maxFinite,
+    return Scaffold(
+      backgroundColor: appTheme.gray_100,
+      appBar: _buildAppBar(context),
+      body: SafeArea(
+        child: SingleChildScrollView(
           padding: EdgeInsets.only(
             top: 24.h,
             left: 16.h,
             right: 16.h,
+            bottom: 24.h,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

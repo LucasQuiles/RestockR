@@ -21,18 +21,16 @@ class RecheckHistoryScreenState extends ConsumerState<RecheckHistoryScreen> {
     return SafeArea(
       child: Scaffold(
         backgroundColor: appTheme.gray_100,
-        body: Container(
-          width: double.infinity,
-          child: Column(
-            children: [
-              _buildHeaderSection(context),
-              Expanded(
-                child: SingleChildScrollView(
-                  child: _buildContentSection(context),
-                ),
+        body: Column(
+          children: [
+            _buildHeaderSection(context),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.symmetric(horizontal: 16.h, vertical: 16.h),
+                child: _buildContentSection(context),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -79,7 +77,10 @@ class RecheckHistoryScreenState extends ConsumerState<RecheckHistoryScreen> {
             height: 48.h,
             width: 48.h,
             padding: EdgeInsets.all(12.h),
-            onTap: () {},
+            onTap: () {
+              NavigatorService.pushNamed(
+                  AppRoutes.notificationsAlertsSettingsScreen);
+            },
           ),
           SizedBox(width: 8.h),
           CustomIconButton(
@@ -89,7 +90,9 @@ class RecheckHistoryScreenState extends ConsumerState<RecheckHistoryScreen> {
             height: 48.h,
             width: 48.h,
             padding: EdgeInsets.all(12.h),
-            onTap: () {},
+            onTap: () {
+              NavigatorService.pushNamed(AppRoutes.profileSettingsScreen);
+            },
           ),
         ],
       ),
@@ -101,7 +104,7 @@ class RecheckHistoryScreenState extends ConsumerState<RecheckHistoryScreen> {
     return Container(
       margin: EdgeInsets.only(left: 16.h, right: 16.h, bottom: 12.h),
       child: Row(
-        spacing: 8.h,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
             child: CustomSearchView(
@@ -111,14 +114,18 @@ class RecheckHistoryScreenState extends ConsumerState<RecheckHistoryScreen> {
               borderRadius: 12.h,
             ),
           ),
+          SizedBox(width: 8.h),
           CustomIconButton(
             iconPath: ImageConstant.imgIcons1Black900,
             backgroundColor: appTheme.gray_100,
-            borderRadius: 16.h,
+            borderRadius: 12.h,
             height: 48.h,
             width: 48.h,
             padding: EdgeInsets.all(12.h),
-            onTap: () {},
+            onTap: () {
+              NavigatorService.pushNamed(
+                  AppRoutes.globalFilteringSettingsScreen);
+            },
           ),
         ],
       ),
@@ -127,25 +134,13 @@ class RecheckHistoryScreenState extends ConsumerState<RecheckHistoryScreen> {
 
   /// Section Widget
   Widget _buildContentSection(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            margin: EdgeInsets.only(top: 16.h, left: 16.h),
-            child: Column(
-              spacing: 16.h,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildMonthDropdown(context),
-                _buildCalendarSection(context),
-                _buildActivityListSection(context),
-              ],
-            ),
-          ),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildCalendarSection(context),
+        SizedBox(height: 16.h),
+        _buildActivityListSection(context),
+      ],
     );
   }
 
@@ -156,7 +151,7 @@ class RecheckHistoryScreenState extends ConsumerState<RecheckHistoryScreen> {
         final state = ref.watch(recheckHistoryNotifier);
         return CustomDropdown(
           hintText: "September 2025",
-          width: "44%",
+          width: "48%",
           iconPath: ImageConstant.imgFrameBlack900,
           contentPadding: EdgeInsets.only(
             top: 12.h,
@@ -178,31 +173,71 @@ class RecheckHistoryScreenState extends ConsumerState<RecheckHistoryScreen> {
 
   /// Section Widget
   Widget _buildCalendarSection(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      child: Consumer(
-        builder: (context, ref, _) {
-          return CalendarDatePicker(
-            initialDate: DateTime.now(),
-            firstDate: DateTime(2020),
-            lastDate: DateTime(2030),
-            onDateChanged: (date) {
-              ref.read(recheckHistoryNotifier.notifier).onDateChanged(date);
-            },
-          );
-        },
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildMonthDropdown(context),
+        SizedBox(height: 8.h),
+        Consumer(
+          builder: (context, ref, _) {
+            final state = ref.watch(recheckHistoryNotifier);
+            final selectedDate =
+                state.recheckHistoryModel?.selectedDate ?? DateTime.now();
+            final firstDate = DateTime(2020);
+            final lastDate = DateTime(2030);
+
+            DateTime clampedDate = selectedDate;
+            if (clampedDate.isBefore(firstDate)) {
+              clampedDate = firstDate;
+            } else if (clampedDate.isAfter(lastDate)) {
+              clampedDate = lastDate;
+            }
+
+            return Theme(
+              data: Theme.of(context).copyWith(
+                colorScheme: ColorScheme.light(
+                  primary: appTheme.black_900,
+                  onPrimary: appTheme.white_A700,
+                  surface: appTheme.gray_100,
+                  onSurface: appTheme.gray_900,
+                ),
+                textButtonTheme: TextButtonThemeData(
+                  style: TextButton.styleFrom(
+                    foregroundColor: appTheme.black_900,
+                  ),
+                ),
+              ),
+              child: CalendarDatePicker(
+                key: ValueKey<DateTime>(clampedDate),
+                initialDate: clampedDate,
+                firstDate: firstDate,
+                lastDate: lastDate,
+                onDateChanged: (date) {
+                  ref
+                      .read(recheckHistoryNotifier.notifier)
+                      .onDateChanged(date);
+                },
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 
   /// Section Widget
   Widget _buildActivityListSection(BuildContext context) {
     return Container(
-      margin: EdgeInsets.only(right: 16.h),
+      decoration: BoxDecoration(
+        color: appTheme.white_A700,
+        borderRadius: BorderRadius.circular(16.h),
+        border: Border.all(color: appTheme.gray_300, width: 1),
+      ),
+      padding: EdgeInsets.all(12.h),
       child: Column(
         children: [
           _buildTableHeader(context),
-          SizedBox(height: 6.h),
+          SizedBox(height: 12.h),
           _buildActivityList(context),
         ],
       ),
@@ -211,25 +246,26 @@ class RecheckHistoryScreenState extends ConsumerState<RecheckHistoryScreen> {
 
   /// Section Widget
   Widget _buildTableHeader(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.only(right: 26.h, left: 14.h),
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 4.h),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             "Time",
-            style: TextStyleHelper.instance.title16MediumInter
+            style: TextStyleHelper.instance.body12SemiBoldInter
                 .copyWith(color: appTheme.gray_600),
           ),
-          Text(
-            "Status",
-            style: TextStyleHelper.instance.title16MediumInter
-                .copyWith(color: appTheme.gray_600),
+          SizedBox(width: 20.h),
+          Expanded(
+            child: Text(
+              "Status",
+              style: TextStyleHelper.instance.body12SemiBoldInter
+                  .copyWith(color: appTheme.gray_600),
+            ),
           ),
-          Spacer(),
           Text(
             "Qty",
-            style: TextStyleHelper.instance.title16MediumInter
+            style: TextStyleHelper.instance.body12SemiBoldInter
                 .copyWith(color: appTheme.gray_600),
           ),
         ],
