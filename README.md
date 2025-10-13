@@ -32,48 +32,66 @@ RestockR is a cross–platform Flutter client for monitoring high–demand produ
 
 ## Product Experience Gallery
 
-### Onboarding & Authentication
-- First impressions: the animated splash transitions into a concise login form with validation messaging and password toggle.  
-  ![Splash screen](ScreenShots/SplashScreen.jpg)  
+### Developer Quick Launch Walkthrough
+1. **Run the launcher (`RunStartScript.png`)**  
+   Execute `./start.sh` from the project root. The script validates the environment (Flutter/Dart/git, CocoaPods on macOS), ensures `env.json` exists, and offers guided fixes. It will not install global dependencies without your confirmation; watch for yellow prompts asking before running Homebrew/apt/snap commands. When the summary banner shows no blocking warnings, you are ready for launch.
+   ![Run start script](ScreenShots/RunStartScript.png)
+2. **Choose “Quick Launch” (`QuickLaunch.png`)**  
+   Option `[1] Quick Launch` performs the fastest path to running RestockR. It checks for connected devices, surfaces recommended targets (iOS/Android/Chrome), and queues the proper `flutter run` command. Selecting other menu items keeps you in the launcher for advanced actions.
+   ![Quick launch menu](ScreenShots/QuickLaunch.png)
+3. **Select the iOS simulator (`iOSEmu.png`)**  
+   When prompted for a platform, pick iOS if you want to boot Apple silicon simulators. The launcher queries available runtimes and uses `simctl` to pick an appropriate device. If none exist, it will offer to create one.
+   ![iOS emulator choice](ScreenShots/iOSEmu.png)
+4. **Watch the simulator boot (`LaunchiOSSimulation.png`)**  
+   The script opens Simulator.app and attaches a spinner while `simctl` boots the selected device. Expect a short delay the first time as Xcode initializes assets.
+   ![Launching iOS simulation](ScreenShots/LaunchiOSSimulation.png)
+5. **Confirm RestockR is live (`AppLaunchedSuccessfully.png`)**  
+   Once the device registers with `flutter devices`, the launcher deploys the app. You should see the Flutter build banner followed by RestockR’s splash screen inside the simulator.
+   ![App launched successfully](ScreenShots/AppLaunchedSuccessfully.png)
+
+### Core Application Screens
+- **Splash Screen (`SplashScreen.jpg`)**  
+  Animated intro that sets the brand tone while Flutter finalizes initialization.
+  ![Splash screen](ScreenShots/SplashScreen.jpg)
+- **Login Screen (`Login.jpg`)**  
+  Credential form with inline validation, password visibility toggle, and quick navigation to recovery actions.
   ![Login screen](ScreenShots/Login.jpg)
-- Successful launch confirmation on device and emulator is captured for QA reference.  
-  ![App launched successfully](ScreenShots/AppLaunchedSuccessfully.png)
-
-### Watchlists & Discovery
-- Primary watchlist view with subscription toggles and SKU detail peek.  
-  ![Watchlist subscriptions](ScreenShots/Watchlist.jpg)
-- Discovery tab enables rapid subscription to trending items.  
-  ![Discover products](ScreenShots/Watchlist_2.jpg)
-
-### Live Monitoring & Historical Insight
-- Real-time monitor cards highlight retailer, quantity, pricing, and sentiment actions.  
+- **Monitor Feed (`Monitor.jpg`)**  
+  Real-time restock cards exposing retailer, quantity, pricing, and sentiment actions (up/down votes, buy buttons).
   ![Monitor feed](ScreenShots/Monitor.jpg)
-- Recheck history timeline shows hour-by-hour traffic to guide restock cadences.  
-  ![Recheck history](ScreenShots/History v2.jpg)
-
-### Filters & Control Surfaces
-- Retailer, product type, and number-type filters can be combined for targeted alerts.  
-  ![Retailer filter](ScreenShots/FilterRetailer.jpg)  
-  ![Product type filter](ScreenShots/FilterProductType.jpg)  
+- **Watchlist Overview (`Watchlist.jpg`)**  
+  Active subscriptions with SKU detail preview and instant unsubscribe control.
+  ![Watchlist subscriptions](ScreenShots/Watchlist.jpg)
+- **Discovery Watchlist (`Watchlist_2.jpg`)**  
+  Explore new products and subscribe with one tap to extend coverage.
+  ![Discover products](ScreenShots/Watchlist_2.jpg)
+- **Number-Type Filter (`FilterNumberType.jpg`)**  
+  Tune thresholds for stock levels or velocity metrics to minimize noise.
   ![Number type filter](ScreenShots/FilterNumberType.jpg)
-- Global filtering thresholds and overrides ensure the signal matches each operator’s tolerance.  
+- **Product-Type Filter (`FilterProductType.jpg`)**  
+  Focus on categories (consoles, cards, etc.) aligned with operator responsibilities.
+  ![Product type filter](ScreenShots/FilterProductType.jpg)
+- **Retailer Filter (`FilterRetailer.jpg`)**  
+  Zero in on specific merchants or marketplace groups for targeted monitoring.
+  ![Retailer filter](ScreenShots/FilterRetailer.jpg)
+- **Retailer Overrides (`RetailerSpecificOverrides.jpg`)**  
+  Configure per-retailer delays, cooldowns, and notification rules to respect store quirks.
+  ![Retailer-specific overrides](ScreenShots/RetailerSpecificOverrides.jpg)
+- **Global Filtering (`GlobalFiltering.jpg`)**  
+  Set account-wide minimum quantities and auto-open rules to match restock goals.
   ![Global filtering](ScreenShots/GlobalFiltering.jpg)
-
-### Alerts & Profile Controls
-- Profile hub bundles alert preferences, notification toggles, and per-retailer overrides.  
-  ![Profile hub](ScreenShots/Profile_1.jpg)  
-  ![Notification & alert settings](ScreenShots/NotificationsAlerts.jpg)  
-  ![Retailer overrides](ScreenShots/RetailerSpecificOverrides.jpg)
-- Additional profile utilities (e.g., linked accounts) are staged for backend integration.  
+- **History Timeline (`History v2.jpg`)**  
+  Heatmap of restock activity by hour for postmortems and scheduling.
+  ![Recheck history](ScreenShots/History v2.jpg)
+- **Notifications & Alerts (`NotificationsAlerts.jpg`)**  
+  Toggle restock sounds, push notifications, and escalation preferences.
+  ![Notifications & alerts](ScreenShots/NotificationsAlerts.jpg)
+- **Profile Hub (`Profile_1.jpg`)**  
+  Entry point to alert preferences, account settings, and integrations.
+  ![Profile hub](ScreenShots/Profile_1.jpg)
+- **Profile Utilities (`Profile_2.jpg`)**  
+  Placeholder for upcoming backend-linked features (e.g., organization switching, device management).
   ![Profile utilities](ScreenShots/Profile_2.jpg)
-
-### Developer Tooling Snapshots
-- `./start.sh` walkthrough—from invocation to quick-launch options and device detection.  
-  ![Run start script](ScreenShots/RunStartScript.png)  
-  ![Quick launch menu](ScreenShots/QuickLaunch.png)
-- iOS simulator automation and launch feedback for macOS developers.  
-  ![Launching iOS simulation](ScreenShots/LaunchiOSSimulation.png)  
-  ![iOS emulator ready](ScreenShots/iOSEmu.png)
 
 ---
 
