@@ -1,232 +1,228 @@
-# RestockR
+# RestockR Developer Handoff
 
-RestockR is a Flutter application for collectors and retail operators who need to stay ahead of hot product restocks. The app combines live inventory signals, watchlist management, and granular filtering in a clean mobile experience powered by Riverpod state management. It was put together quietly by trainers who prefer to stay pseudonymous but still appreciate the folks who keep the community vibrant.
-
----
-
-## Overview
-
-RestockR lets users:
-- Onboard quickly with a splash-to-login flow.
-- Build watchlists across multiple retailers and toggle subscriptions with a tap.
-- Monitor live restock activity with voting and purchase actions.
-- Review historical restock trends to spot patterns.
-- Fine-tune alerts, filtering, and retailer-specific overrides.
-
-![Splash screen](ScreenShots/SplashScreen.jpg)
+RestockR is a cross–platform Flutter client for monitoring high–demand product restocks, managing personal watchlists, and collaborating on inventory signals. Front‑end implementation is feature complete; the next phase is to connect it to the production backend, harden the deployment pipeline, and ship a 1.0 release. This README captures everything the incoming team needs to continue confidently.
 
 ---
 
-## Feature Highlights
-
-- **Onboarding & Authentication**  
-  ![Login screen](ScreenShots/Login.jpg)  
-  Guided login flow with required credential validation, password visibility toggle, and easy access to the forgot-password action.
-
-- **Watchlists That Work the Way You Do**  
-  ![Watchlist subscriptions](ScreenShots/Watchlist.jpg)  
-  Manage active product subscriptions, inspect SKU details, and unsubscribe instantly.  
-  ![Discover products](ScreenShots/Watchlist_2.jpg)  
-  Flip to discovery mode to browse new items and subscribe in one tap.
-
-- **Live Monitor Feed**  
-  ![Monitor feed](ScreenShots/Monitor.jpg)  
-  Live cards surface retailer, quantity, price, and crowd sentiment. Up/down voting helps teams share confidence, while quick actions keep purchasing within reach.
-
-- **Historical Insight**  
-  ![Recheck history](ScreenShots/History v2.jpg)  
-  A timeline heatmap shows hour-by-hour activity levels so operators can plan recheck cadences.
-
-- **Filtering Controls**  
-  ![Retailer filter](ScreenShots/FilterRetailer.jpg)  
-  ![Product type filter](ScreenShots/FilterProductType.jpg)  
-  ![Number type filter](ScreenShots/FilterNumberType.jpg)  
-  Combine retailer, product, and metric filters to zero in on the restock signals that matter most.
-
-- **Alerts & Profile Settings**  
-  ![Profile hub](ScreenShots/Profile_1.jpg)  
-  A profile hub links to alert preferences, global thresholds, and per-retailer overrides.  
-  ![Notifications & alerts](ScreenShots/NotificationsAlerts.jpg)  
-  Toggle restock sounds or expand into broader notification settings.  
-  ![Global filtering](ScreenShots/GlobalFiltering.jpg)  
-  Configure minimum target quantity and auto-open categories at the account level.  
-  ![Retailer overrides](ScreenShots/RetailerSpecificOverrides.jpg)  
-  Override queue behavior for individual retailers with custom delays and cooldowns.
+## Collaboration TL;DR
+- **Current status**: Flutter UI, navigation flows, and local state layers are ready. Backend service calls are mocked and must be wired to the real API. No production build has been cut yet.
+- **Primary tools**: `./start.sh` (interactive launcher), `./install.sh`, `./envsetup.sh`, `./emulators.sh`, and `./logs.sh` orchestrate setup, diagnostics, and daily workflows.
+- **Secrets**: `env.json` (generated automatically) holds API keys. It is `.gitignore`d and locked to permission `600`.
+- **Testing**: No automated test suite beyond `flutter test` scaffolding. Plan to add integration tests alongside backend hookup.
+- **Next major deliverables**:
+  1. Finalize backend endpoints and SDK integration.
+  2. Implement authentication + session persistence.
+  3. Stand up staging/production build targets and CI.
+  4. Run accessibility, performance, and store–readiness reviews.
 
 ---
 
-## Architecture at a Glance
+## Project Snapshot
 
-- **Flutter 3** application targeting Android, iOS, and web.
-- **Riverpod** for state management with `StateNotifier` patterns (`lib/presentation/**/notifier`).
-- **Equatable** for compact immutable state classes.
-- **Feature-first directory structure** under `lib/presentation`, paired with reusable widgets in `lib/widgets`.
-- Responsive layout utilities (`lib/core/utils/size_utils.dart`) for consistent sizing across devices.
+| Area | Notes |
+| --- | --- |
+| **Product Vision** | Give collectors/operators a command center to track restocks across multiple retailers with actionable alerts and historical insights. |
+| **Platforms** | iOS, Android, Web (single Flutter codebase). |
+| **State Management** | `flutter_riverpod` with `StateNotifier` view models, `equatable` data classes. |
+| **Networking** | Placeholder services; awaiting final backend contract (Supabase + LLM helpers referenced in `env.json`). |
+| **Design System** | Custom widgets under `lib/widgets`, responsive utilities in `lib/core/utils`. |
+| **Logging** | All CLI tooling streams to `.restockr_logs/session_<timestamp>.log[.gz]` for traceability. |
 
-### Directory Structure
+---
+
+## Codebase Tour
 
 ```
-lib/
-├── core/                  # Core utilities and exports
-│   ├── app_export.dart   # Central export file for common imports
-│   └── utils/            # Size utilities, navigation, image constants
-├── presentation/          # Feature screens (feature-first architecture)
-│   ├── splash_screen/    # App initialization with animations
-│   ├── login_screen/     # Authentication flow
-│   ├── product_watchlist_screen/  # Main watchlist with tabs
-│   ├── product_monitor_screen/    # Live restock feed
-│   ├── recheck_history_screen/    # Historical timeline
-│   ├── profile_settings_screen/   # User preferences hub
-│   └── *_filter_screen/  # Various filtering options
-├── routes/               # App navigation configuration
-├── theme/                # Theme definitions and text styles
-└── widgets/              # Reusable UI components
-    ├── custom_button.dart
-    ├── custom_text_form_field.dart
-    └── custom_app_bar.dart
+.
+├── android/                     # Standard Flutter Android project
+├── ios/                         # iOS/Xcode project + Pod configuration
+├── lib/
+│   ├── core/                    # App-wide exports, routing, sizing utilities
+│   ├── presentation/            # Feature-first screens with models/notifiers/widgets
+│   ├── routes/                  # Route generator & navigation configuration
+│   ├── theme/                   # ThemeData, color palettes, typography
+│   └── widgets/                 # Reusable UI components
+├── assets/                      # Images, fonts, mock data
+├── scripts (root)               # Executable helpers (start/install/envsetup/etc.)
+├── pubspec.yaml                 # Dependencies, fonts, assets
+└── env.json                     # Generated secrets (ignored from VCS)
 ```
 
-Each feature screen follows a consistent pattern:
-- `[feature]_screen.dart` - UI implementation
-- `models/` - Data models with Equatable
-- `notifier/` - StateNotifier for business logic
-- `widgets/` - Feature-specific widgets
+Key entry points:
+- `lib/presentation/*_screen/` packages UI + `StateNotifier` logic per feature.
+- `lib/core/app_export.dart` aggregates shared imports to keep feature files lean.
+- `lib/core/utils/size_utils.dart` drives scalable spacing and typography.
+- `lib/widgets/` contains custom buttons, text fields, app bars, etc.
 
 ---
 
-## Getting Started
+## Tooling & Scripts
 
-### Prerequisites
-- Flutter SDK ^3.29.2
-- Dart SDK
-- Android Studio or VS Code with Flutter tooling
-- Xcode (for iOS builds) / Android SDK (for Android builds)
+| Script | Purpose |
+| --- | --- |
+| `start.sh` | Main launcher. Runs diagnostics, guides device/emulator selection, launches the app, and records session logs. |
+| `envsetup.sh` | Validates project structure, ensures `env.json`, checks toolchains (Flutter, Dart, git, CocoaPods), and offers guided fixes. |
+| `install.sh` | Clean install or reinstall workflow (`flutter pub get`, pod install, workspace cleanup). |
+| `emulators.sh` | Interactive manager for iOS simulators & Android emulators, including auto-creation and boot helpers. |
+| `uninstall.sh` | Removes generated artifacts, pods, build outputs, and the `.restockr_devkit` marker. |
+| `logs.sh` | Inspect, export, or prune `.restockr_logs`. Keeps only the most recent 50 logs (compresses older entries). |
+| `test_start.sh` | Smoke test that the launcher boots and logs correctly. Useful in CI once added. |
 
-### Install and Run
+> All scripts source common helpers from `lib/common.sh` and `lib/visual.sh`, which provide logging, colored output, spinners, timers, and shared environment variables.
+
+---
+
+## Environment Setup
+
+1. **Install prerequisites**
+   - Flutter SDK `^3.6.0` (check with `flutter --version`).
+   - Dart (bundled with Flutter).
+   - Xcode + command-line tools (macOS/iOS) and Android Studio/SDK (Android).
+   - Homebrew (macOS) is optional but unlocks automated fixes in the scripts.
+
+2. **Clone the repository**
+   ```bash
+   git clone https://github.com/LucasQuiles/RestockR.git
+   cd RestockR
+   ```
+
+3. **Bootstrap tooling**
+   ```bash
+   chmod +x start.sh install.sh envsetup.sh emulators.sh logs.sh uninstall.sh
+   ./start.sh
+   ```
+   - First run prompts for installation → runs `envsetup.sh` checks → executes `flutter pub get` → optionally installs CocoaPods.
+   - Subsequent runs drop you in the developer menu with quick actions (launch app, run tests/analyzer, manage emulators, reinstall kit).
+
+4. **Configure `env.json`**
+   - Generated automatically if missing. Populate with real values before hitting production services:
+     ```json
+     {
+       "SUPABASE_URL": "https://your-supabase-project.supabase.co",
+       "SUPABASE_ANON_KEY": "replace-me",
+       "OPENAI_API_KEY": "replace-me",
+       "GEMINI_API_KEY": "replace-me",
+       "ANTHROPIC_API_KEY": "replace-me",
+       "PERPLEXITY_API_KEY": "replace-me"
+     }
+     ```
+   - File permissions are locked to `600` by the setup script; avoid loosening them.
+
+---
+
+## Running, Building, and Testing
+
+### Day-to-day development
 ```bash
-flutter pub get
-flutter run
+./start.sh          # recommended workflow (device detection + launch)
+flutter run         # manual launch if you already have a device/emulator up
 ```
 
-### Quick Start Script
-
-If you extracted a fresh zip, you can bootstrap everything with:
-
+### Static analysis & unit tests
 ```bash
-./start.sh
+flutter analyze
+flutter test
 ```
+> No tests exist yet—plan to introduce unit tests for Riverpod notifiers and widget tests for the critical flows once backend integration lands.
 
-What `start.sh` does:
-- If the executable bit was stripped by your unzip tool, run `chmod +x start.sh` once before executing.
-- Detects whether the RestockR Dev Kit is already set up (via a `.restockr_devkit` marker) and shows the appropriate menu:
-  - First run: `[1] Install RestockR Dev Kit` verifies the project structure, recreates `env.json` if missing, checks Flutter/Dart/git, and runs `flutter pub get`.
-  - After installation: `[1] Launch Developer Menu` (run app, tests, analyzer, doctor), `[2] Emulator Launcher` (guided simulator/emulator workflow for Chrome/iOS/Android), `[3] Install/Update Dependencies`, `[4] Re-install RestockR Dev Kit`, `[5] Exit.
-- Runs self-diagnosis on required tooling and offers guided repair/installation flows (Homebrew/snap/apt) where possible.
-- Summarises connected devices, lists available emulators, autogenerates/boots default iOS & Android simulators when none exist, and launches RestockR automatically (falling back to Chrome when native targets aren’t available).
-- Streams a detailed log to `.restockr_logs/start_<timestamp>.log` so you can review each step or share traces when debugging.
-
-> **Note:** Automatic iOS simulator launch requires full Xcode (including the simulator tools). If the launcher reports missing `xcrun simctl`, install Xcode from the App Store (or run `xcode-select --install`) and re-run `./start.sh`.
-- Provides a quick-start checklist (start emulator → run app → update `env.json`) each time the developer menu opens.
-
-### Build for Release
+### Release builds
 ```bash
-# Android
 flutter build apk --release
-
-# iOS
 flutter build ios --release
+flutter build web --release
 ```
+Make sure to configure signing, provisioning profiles, and store metadata during the release hardening sprint.
 
 ---
 
-## Configuration
+## Backend & Integration Expectations
 
-Sensitive keys live in `env.json`:
+- **Current state**: All API calls are placeholders. Mock data is currently embedded or sourced from assets; there is no live networking layer.
+- **Target stack**: Supabase is referenced for storage/auth (see `env.json`). Large-language-model keys (OpenAI, Gemini, Anthropic, Perplexity) are reserved for assistant features planned in later phases.
+- **Next steps**:
+  1. Finalize API contract (payload shapes, auth flows, error handling).
+  2. Implement a dedicated data layer (e.g., `lib/data/`) with repositories/services using `dio` or `http` (not yet added to `pubspec.yaml`).
+  3. Replace dummy providers with asynchronous data sources and handle loading/error states in each feature screen.
+  4. Persist sessions/token refresh using `shared_preferences` (already included).
+  5. Add offline caching strategy if required by operators (to be scoped).
 
-```json
-{
-  "SUPABASE_URL": "https://dummy.supabase.co",
-  "SUPABASE_ANON_KEY": "dummykey.updateyourkkey.here",
-  "OPENAI_API_KEY": "your-openai-api-key-here",
-  "GEMINI_API_KEY": "your-gemini-api-key-here",
-  "ANTHROPIC_API_KEY": "your-anthropic-api-key-here",
-  "PERPLEXITY_API_KEY": "your-perplexity-api-key-here"
-}
-```
-
-Replace these with real values before shipping. Never commit production secrets.
-
-### ⚠️ Security Best Practices
-
-**IMPORTANT:** `env.json` contains sensitive API keys and credentials.
-
-✅ **DO:**
-- Keep `env.json` in `.gitignore` (already configured)
-- Use secure file permissions (automatically set to `600` by setup scripts)
-- Store production keys in secure secret management systems
-- Rotate API keys regularly
-- Use environment-specific keys (dev/staging/prod)
-
-❌ **DON'T:**
-- Commit `env.json` to version control
-- Share `env.json` in screenshots, logs, or documentation
-- Store `env.json` in cloud-synced folders (Dropbox, Google Drive, etc.)
-- Use production API keys in development environments
-- Share your `.restockr_logs/` directory (may contain sensitive data)
-
-The setup scripts automatically set `env.json` to permission mode `600` (owner read/write only) to prevent unauthorized access. If you modify the file externally, permissions will be re-secured on next run.
-
-### Key Dependencies
-
-- **flutter_riverpod** ^2.5.1 - State management
-- **equatable** ^2.0.5 - Value equality for state models
-- **flutter_svg** ^2.0.12 - SVG rendering
-- **cached_network_image** ^3.4.1 - Image caching
-- **shared_preferences** ^2.3.3 - Local storage
-- **connectivity_plus** ^6.1.0 - Network status monitoring
-- **gradient_borders** ^1.0.2 - Custom UI styling
+Document the final REST/gRPC/WebSocket interface inside the repo once complete (consider `docs/` or a Wiki entry).
 
 ---
 
-## Testing & Tooling
+## Development Workflow & Collaboration
 
-- Run widget and unit tests: `flutter test`
-- Recommended static checks: `flutter analyze`
-- CI suggestions: add formatting (`flutter format --set-exit-if-changed`) and platform builds to catch regressions early.
-
----
-
-## Known Limitations
-
-The following issues are currently tracked and should be addressed before a production launch:
-
-- **Bottom navigation state resets** – `selectedIndex` is redeclared inside `_buildBottomBar`, so the active tab always snaps back to “Watchlist” (`lib/presentation/product_watchlist_screen/product_watchlist_screen.dart:74`). Persist the index in widget state (or via Riverpod) to keep selection in sync.
-- **CustomButton ignores style overrides** – `_buildButtonContent` drops the computed color, size, and weight arguments, preventing consumers from customizing the button (`lib/widgets/custom_button.dart:142`). Apply the supplied values when you build the `Text`.
-- **Monitor tabs share one list** – The monitor TabBarView always renders the same dataset because the tab index is discarded and there’s no filtering by retailer or category (`lib/presentation/product_monitor_screen/product_monitor_screen.dart:205`). Scope the data per tab so the view reflects the selected filter.
+- **Branching**: Use feature branches (`feature/backend-auth`, `fix/login-validation`, etc.) off `main`. Keep `main` deployable.
+- **Commits**: Conventional style (`feat:`, `fix:`, `chore:`) is preferred to align with existing history.
+- **Code Reviews**: Submit PRs against `main`. Include screenshots/GIFs for UI changes and describe testing performed.
+- **CI/CD**: Not yet configured. Recommendation: set up GitHub Actions with stages for `flutter analyze`, `flutter test`, and `./test_start.sh`.
+- **Release cadence**: Pending. Suggest establishing `staging` and `production` branches once backend integration stabilizes.
+- **Documentation**: Additional design docs auto-generated during the refactor were intentionally removed from git. If you regenerate collaboration notes, store them in a shared drive or a new `docs/` folder that remains ignored if the volume is high.
 
 ---
 
-## Roadmap Ideas
+## Observability & Troubleshooting
 
-1. Hook the notifier layers to real APIs (Supabase, REST, or WebSockets) to replace sample data.  
-2. Expand alerting with scheduled push notifications and store-specific thresholds.  
-3. Add integration tests for navigation flows (splash → login → monitor → profile).  
-4. Build a settings export/import flow so power users can share configurations.
-
----
-
-## Community Notes
-
-- Thanks to the collectors and trainers, Emerald alerts, and Chef Wendell for keeping the feed lively.
-- Feedback, pull stories, and gentle rivalry are welcome—just keep it about the hunt, not the hunters.
-- If you spot bugs or want to contribute, open an issue or PR and drop your favorite starter in the description so we know you’re one of us.
-
----
-
-## License
-
-This project is released under the [MIT License](LICENSE). Feel free to use, modify, and distribute with attribution.
+- Session logs live in `.restockr_logs/`. New entries are created every time a script runs.
+- `logs.sh` offers `list`, `view`, `export`, and `prune` commands:
+  ```bash
+  ./logs.sh list
+  ./logs.sh view latest
+  ./logs.sh export ios-launch > ios_setup.txt
+  ```
+- iOS specific tips:
+  - Ensure Xcode is fully installed (`xcode-select -p` should not error).
+  - If simulators are missing, `envsetup.sh` and `emulators.sh` can trigger downloads (`xcodebuild -downloadPlatform iOS`).
+- Android specific tips:
+  - Install Android Studio Device Manager images.
+  - Ensure `$ANDROID_HOME` or `$ANDROID_SDK_ROOT` is set if using CLI tooling.
 
 ---
 
-> Screenshots are located in `ScreenShots/` and referenced inline above for quick documentation updates. Add new captures in the same directory to extend this gallery.
+## Known Gaps & TODOs
+
+1. **Backend Integration**
+   - Implement authentication (sign-in, token refresh, error modals).
+   - Wire real-time restock feed (websocket or polling).
+   - Persist user settings/watchlists server-side.
+
+2. **Testing & Quality**
+   - Add widget tests for core flows (login, watchlist, monitor, filters).
+   - Add integration tests for navigation and API error handling.
+   - Include golden tests or visual regression checks for high-value screens.
+
+3. **Performance & Accessibility**
+   - Profile start-up time and optimize asset loading.
+   - Audit for a11y (contrast, semantics, large text, screen reader labels).
+   - Implement skeleton states for long-running operations.
+
+4. **Release Readiness**
+   - Configure app icons, splash screens, and store metadata.
+   - Set up CI, crash reporting (Sentry/Firebase), and analytics.
+   - Draft privacy policy & terms for app stores.
+
+5. **Future Enhancements (Optional)**
+   - Multi-tenant/org accounts.
+   - Push notification integration (Firebase/APNs).
+   - Collaboration features (shared watchlists, comments).
+
+---
+
+## Change Log (Last Cycle)
+
+- Modularized all CLI scripts and moved shared logic into `lib/common.sh` + `lib/visual.sh`.
+- Added CocoaPods-friendly iOS project (`ios/Podfile`, `ios/Podfile.lock`).
+- Refreshed `start.sh` with guided launch flows, spinner UI, diagnostics, and log rotation.
+- Created tooling to export/prune logs and manage emulators (`emulators.sh`, `logs.sh`).
+- Standardized `env.json` generation with secure permissions.
+- Removed internal collaboration documents from version control (now ignored via `.gitignore`).
+
+---
+
+## Ownership & Contact
+
+- **Repository Owner**: Lucas Quiles (`@LucasQuiles` on GitHub). Reach out for access, deployment credentials, or historical context.
+- **Next Lead**: _TBD_ — please add your contact information here once the backend team takes over.
+
+Keep this README as the single source of truth for onboarding. Update it when you finalize backend endpoints, add CI/CD, or change the release process so future contributors inherit accurate guidance.
+
