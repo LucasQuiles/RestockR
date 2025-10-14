@@ -18,6 +18,9 @@ void main() {
 class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final routeGuard = ref.watch(routeGuardProvider);
+    NavigatorService.registerGuard(routeGuard);
+
     return Sizer(
       builder: (context, orientation, deviceType) {
         return MaterialApp(

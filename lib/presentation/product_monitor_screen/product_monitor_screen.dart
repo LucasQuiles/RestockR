@@ -196,12 +196,10 @@ class ProductMonitorScreenState extends ConsumerState<ProductMonitorScreen>
               duration: Duration(milliseconds: 180),
               padding: EdgeInsets.symmetric(horizontal: 18.h, vertical: 10.h),
               decoration: BoxDecoration(
-                color:
-                    isSelected ? appTheme.black_900 : appTheme.white_A700,
+                color: isSelected ? appTheme.black_900 : appTheme.white_A700,
                 borderRadius: BorderRadius.circular(24.h),
                 border: Border.all(
-                  color:
-                      isSelected ? appTheme.black_900 : appTheme.gray_300,
+                  color: isSelected ? appTheme.black_900 : appTheme.gray_300,
                   width: 1,
                 ),
               ),
@@ -332,8 +330,7 @@ class ProductMonitorScreenState extends ConsumerState<ProductMonitorScreen>
     return items
         .where(
           (element) =>
-              element.storeName?.toLowerCase() ==
-              expectedStore.toLowerCase(),
+              element.storeName?.toLowerCase() == expectedStore.toLowerCase(),
         )
         .toList();
   }

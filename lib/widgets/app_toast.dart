@@ -46,7 +46,8 @@ void showAppToast(
             decoration: BoxDecoration(
               color: baseColor.withAlpha((0.22 * 255).round()),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: baseColor.withAlpha((0.35 * 255).round())),
+              border:
+                  Border.all(color: baseColor.withAlpha((0.35 * 255).round())),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,

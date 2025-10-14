@@ -2,6 +2,9 @@
 
 RestockR is a cross–platform Flutter client for monitoring high–demand product restocks, managing personal watchlists, and collaborating on inventory signals. Front‑end implementation is feature complete; the next phase is to connect it to the production backend, harden the deployment pipeline, and ship a 1.0 release. This README captures everything the incoming team needs to continue confidently.
 
+> **Branch notice (`v0.1`)**  
+> This branch is a developer-focused staging ground for new navigation work, auth wiring, and tooling tweaks. Expect rapid iteration, force-pushed fixes, and occasional breaking changes while features burn in. Reach for `main` when you need the latest semi-stable build.
+
 ---
 
 ## Collaboration TL;DR

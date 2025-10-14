@@ -203,8 +203,7 @@ class ProductWatchlistScreenInitialPageState
       child: Consumer(
         builder: (context, ref, _) {
           final state = ref.watch(productWatchlistNotifier);
-          final items =
-              state.productWatchlistModel?.watchlistItems ?? const [];
+          final items = state.productWatchlistModel?.watchlistItems ?? const [];
 
           if (state.isLoading ?? false) {
             return Center(child: CircularProgressIndicator());
@@ -246,8 +245,7 @@ class ProductWatchlistScreenInitialPageState
       child: Consumer(
         builder: (context, ref, _) {
           final state = ref.watch(productWatchlistNotifier);
-          final items =
-              state.productWatchlistModel?.watchlistItems ?? const [];
+          final items = state.productWatchlistModel?.watchlistItems ?? const [];
 
           final subscribedItems = items
               .where((item) => item.isSubscribed ?? false)
@@ -340,9 +338,8 @@ class ProductWatchlistScreenInitialPageState
     final wasSubscribed = item.isSubscribed ?? false;
     ref.read(productWatchlistNotifier.notifier).toggleSubscription(item);
 
-    final variant = wasSubscribed
-        ? AppToastVariant.warning
-        : AppToastVariant.success;
+    final variant =
+        wasSubscribed ? AppToastVariant.warning : AppToastVariant.success;
     final message = wasSubscribed
         ? 'Removed from your subscriptions.'
         : 'Subscribed to ${item.productName ?? 'product'}.';

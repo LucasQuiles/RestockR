@@ -100,8 +100,7 @@ class LoginScreenState extends ConsumerState<LoginScreen> {
                     if (current.hasError ?? false) {
                       showAppToast(
                         context,
-                        message:
-                            'Login failed. Please check your credentials.',
+                        message: 'Login failed. Please check your credentials.',
                         variant: AppToastVariant.error,
                       );
                     }

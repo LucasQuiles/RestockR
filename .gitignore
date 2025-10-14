@@ -38,6 +38,8 @@ ios/Pods/
 # Coverage & logs
 coverage/
 *.log
+.restockr_logs/
+*.log.gz
 
 # Misc caches
 *.swp
@@ -64,3 +66,4 @@ REFACTORING_SUMMARY.md
 SECURITY_PATCHES_APPLIED.md
 UX_FLOW_IMPROVEMENTS.md
 VISUAL_DESIGN_SYSTEM.md
+AGENTS.md

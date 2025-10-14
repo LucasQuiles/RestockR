@@ -12,6 +12,8 @@ class AppNavigationScreen extends ConsumerStatefulWidget {
 class AppNavigationScreenState extends ConsumerState<AppNavigationScreen> {
   @override
   Widget build(BuildContext context) {
+    final debugRoutes = AppRoutes.debugMenuRoutes.toList();
+
     return SafeArea(
       child: Scaffold(
         backgroundColor: Color(0XFFFFFFFF),
@@ -23,84 +25,29 @@ class AppNavigationScreenState extends ConsumerState<AppNavigationScreen> {
                   padding: EdgeInsets.only(top: 10.h),
                   child: Column(
                     children: [
-                      _buildScreenTitle(
-                        context,
-                        screenTitle: "Splash Screen",
-                        onTapScreenTitle: () =>
-                            onTapScreenTitle(context, AppRoutes.splashScreen),
-                      ),
-                      _buildScreenTitle(
-                        context,
-                        screenTitle: "Login",
-                        onTapScreenTitle: () =>
-                            onTapScreenTitle(context, AppRoutes.loginScreen),
-                      ),
-                      _buildScreenTitle(
-                        context,
-                        screenTitle: "Monitor",
-                        onTapScreenTitle: () => onTapScreenTitle(
-                            context, AppRoutes.productMonitorScreen),
-                      ),
-                      _buildScreenTitle(
-                        context,
-                        screenTitle: "History vTwo",
-                        onTapScreenTitle: () => onTapScreenTitle(
-                            context, AppRoutes.recheckHistoryScreen),
-                      ),
-                      _buildScreenTitle(
-                        context,
-                        screenTitle: "Watchlist - One",
-                        onTapScreenTitle: () => onTapScreenTitle(
-                            context, AppRoutes.productWatchlistScreen),
-                      ),
-                      _buildScreenTitle(
-                        context,
-                        screenTitle: "Watchlist - Two",
-                        onTapScreenTitle: () => onTapScreenTitle(
-                            context, AppRoutes.watchlistManagementScreen),
-                      ),
-                      _buildScreenTitle(
-                        context,
-                        screenTitle: "Notifications & Alerts",
-                        onTapScreenTitle: () => onTapScreenTitle(context,
-                            AppRoutes.notificationsAlertsSettingsScreen),
-                      ),
-                      _buildScreenTitle(
-                        context,
-                        screenTitle: "Filter -Retailer",
-                        onTapScreenTitle: () => onTapScreenTitle(
-                            context, AppRoutes.retailerFilterScreen),
-                      ),
-                      _buildScreenTitle(
-                        context,
-                        screenTitle: "Profile",
-                        onTapScreenTitle: () => onTapScreenTitle(
-                            context, AppRoutes.profileSettingsScreen),
-                      ),
-                      _buildScreenTitle(
-                        context,
-                        screenTitle: "Filter - Product Type",
-                        onTapScreenTitle: () => onTapScreenTitle(
-                            context, AppRoutes.productTypeFilterScreen),
-                      ),
-                      _buildScreenTitle(
-                        context,
-                        screenTitle: "Filter - Number type",
-                        onTapScreenTitle: () => onTapScreenTitle(
-                            context, AppRoutes.numberTypeFilterScreen),
-                      ),
-                      _buildScreenTitle(
-                        context,
-                        screenTitle: "Retailer-Specific Overrides",
-                        onTapScreenTitle: () => onTapScreenTitle(
-                            context, AppRoutes.retailerOverrideSettingsScreen),
-                      ),
-                      _buildScreenTitle(
-                        context,
-                        screenTitle: "Global Filtering",
-                        onTapScreenTitle: () => onTapScreenTitle(
-                            context, AppRoutes.globalFilteringSettingsScreen),
-                      ),
+                      if (debugRoutes.isEmpty)
+                        Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 20.h,
+                            vertical: 12.h,
+                          ),
+                          child: Text(
+                            'No routes available.',
+                            style: TextStyle(
+                              color: Color(0XFF343330),
+                              fontSize: 16.fSize,
+                              fontFamily: 'Roboto',
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        )
+                      else
+                        ...debugRoutes.map(
+                          (route) => _buildScreenTitle(
+                            context,
+                            routeDefinition: route,
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -115,12 +62,11 @@ class AppNavigationScreenState extends ConsumerState<AppNavigationScreen> {
   /// Common widget
   Widget _buildScreenTitle(
     BuildContext context, {
-    required String screenTitle,
-    Function? onTapScreenTitle,
+    required AppRouteDefinition routeDefinition,
   }) {
     return GestureDetector(
       onTap: () {
-        onTapScreenTitle?.call();
+        onTapScreenTitle(context, routeDefinition.path);
       },
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 20.h),
@@ -132,13 +78,29 @@ class AppNavigationScreenState extends ConsumerState<AppNavigationScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  screenTitle,
+                  routeDefinition.debugLabel,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Color(0XFF000000),
                     fontSize: 20.fSize,
                     fontFamily: 'Roboto',
                     fontWeight: FontWeight.w400,
+                  ),
+                ),
+                Flexible(
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      routeDefinition.path,
+                      textAlign: TextAlign.right,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Color(0XFF7A7A7A),
+                        fontSize: 12.fSize,
+                        fontFamily: 'Roboto',
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
                   ),
                 ),
                 Icon(

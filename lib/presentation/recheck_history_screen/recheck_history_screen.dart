@@ -213,9 +213,7 @@ class RecheckHistoryScreenState extends ConsumerState<RecheckHistoryScreen> {
                 firstDate: firstDate,
                 lastDate: lastDate,
                 onDateChanged: (date) {
-                  ref
-                      .read(recheckHistoryNotifier.notifier)
-                      .onDateChanged(date);
+                  ref.read(recheckHistoryNotifier.notifier).onDateChanged(date);
                 },
               ),
             );
