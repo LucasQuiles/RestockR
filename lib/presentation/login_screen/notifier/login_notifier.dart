@@ -1,20 +1,27 @@
 import 'package:flutter/material.dart';
 import '../models/login_model.dart';
 import '../../../core/app_export.dart';
+import '../../../data/auth/auth_repository.dart';
 
 part 'login_state.dart';
 
 final loginNotifier =
     StateNotifierProvider.autoDispose<LoginNotifier, LoginState>(
-  (ref) => LoginNotifier(
-    LoginState(
-      loginModel: LoginModel(),
-    ),
-  ),
+  (ref) {
+    final authRepo = ref.watch(authRepositoryProvider);
+    return LoginNotifier(
+      LoginState(
+        loginModel: LoginModel(),
+      ),
+      authRepo,
+    );
+  },
 );
 
 class LoginNotifier extends StateNotifier<LoginState> {
-  LoginNotifier(LoginState state) : super(state) {
+  final AuthRepository _authRepository;
+
+  LoginNotifier(LoginState state, this._authRepository) : super(state) {
     initialize();
   }
 
@@ -42,17 +49,20 @@ class LoginNotifier extends StateNotifier<LoginState> {
     state = state.copyWith(
       isLoading: true,
       hasError: false,
+      errorMessage: null,
     );
 
     try {
-      // Simulate API call delay
-      await Future.delayed(Duration(seconds: 2));
-
       final username = state.usernameController?.text ?? '';
       final password = state.passwordController?.text ?? '';
 
-      // Mock login validation
-      if (username.isNotEmpty && password.length >= 6) {
+      print('🔐 Attempting login with username: $username');
+
+      // Call real auth repository
+      final result = await _authRepository.signIn(username, password);
+
+      if (result.success) {
+        print('🔐 Login successful!');
         // Clear form fields after successful login
         state.usernameController?.clear();
         state.passwordController?.clear();
@@ -61,19 +71,65 @@ class LoginNotifier extends StateNotifier<LoginState> {
           isLoading: false,
           isLoginSuccess: true,
           hasError: false,
+          errorMessage: null,
         );
       } else {
+        print('🔐 Login failed: ${result.error}');
         state = state.copyWith(
           isLoading: false,
           isLoginSuccess: false,
           hasError: true,
+          errorMessage: result.error ?? 'Login failed. Please try again.',
         );
       }
     } catch (e) {
+      print('🔐 Login exception: ${e.toString()}');
       state = state.copyWith(
         isLoading: false,
         isLoginSuccess: false,
         hasError: true,
+        errorMessage: 'An unexpected error occurred: ${e.toString()}',
+      );
+    }
+  }
+
+  void performDiscordLogin({String? guildId}) async {
+    state = state.copyWith(
+      isLoading: true,
+      hasError: false,
+      errorMessage: null,
+    );
+
+    try {
+      print('🔐 Attempting Discord login with guildId: $guildId');
+
+      // Call Discord OAuth
+      final result = await _authRepository.signInWithDiscord(guildId: guildId);
+
+      if (result.success) {
+        print('🔐 Discord login successful!');
+        state = state.copyWith(
+          isLoading: false,
+          isLoginSuccess: true,
+          hasError: false,
+          errorMessage: null,
+        );
+      } else {
+        print('🔐 Discord login failed: ${result.error}');
+        state = state.copyWith(
+          isLoading: false,
+          isLoginSuccess: false,
+          hasError: true,
+          errorMessage: result.error ?? 'Discord login failed. Please try again.',
+        );
+      }
+    } catch (e) {
+      print('🔐 Discord login exception: ${e.toString()}');
+      state = state.copyWith(
+        isLoading: false,
+        isLoginSuccess: false,
+        hasError: true,
+        errorMessage: 'Discord OAuth error: ${e.toString()}',
       );
     }
   }

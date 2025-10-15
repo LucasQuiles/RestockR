@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RestockR - OAuth Redirect</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            text-align: center;
+            padding: 2rem;
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .error {
+            background: rgba(255, 0, 0, 0.2);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="spinner"></div>
+        <h2>Redirecting to RestockR app...</h2>
+        <p id="status">Please wait</p>
+    </div>
+
+    <script>
+        function setStatus(message, isError = false) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            if (isError) {
+                statusEl.classList.add('error');
+            }
+        }
+
+        function redirectToApp() {
+            try {
+                // Parse URL parameters
+                const urlParams = new URLSearchParams(window.location.search);
+                const token = urlParams.get('token');
+                const error = urlParams.get('error');
+
+                console.log('OAuth redirect page loaded');
+                console.log('Token:', token ? 'present' : 'missing');
+                console.log('Error:', error || 'none');
+
+                // Build custom scheme URL
+                let appUrl;
+                if (token) {
+                    appUrl = `restockr://callback?token=${encodeURIComponent(token)}`;
+                    setStatus('Authentication successful! Opening app...');
+                } else if (error) {
+                    appUrl = `restockr://callback?error=${encodeURIComponent(error)}`;
+                    setStatus(`Authentication failed: ${error}`, true);
+                } else {
+                    appUrl = `restockr://callback?error=no_token`;
+                    setStatus('No authentication token received', true);
+                }
+
+                console.log('Redirecting to:', appUrl);
+
+                // Attempt to open the app
+                window.location.href = appUrl;
+
+                // Fallback message after 3 seconds
+                setTimeout(() => {
+                    setStatus('If the app did not open, please return to RestockR manually.');
+                }, 3000);
+
+            } catch (e) {
+                console.error('Redirect error:', e);
+                setStatus(`Error: ${e.message}`, true);
+            }
+        }
+
+        // Execute redirect immediately
+        redirectToApp();
+    </script>
+</body>
+</html>

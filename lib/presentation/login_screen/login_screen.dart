@@ -94,13 +94,15 @@ class LoginScreenState extends ConsumerState<LoginScreen> {
                         variant: AppToastVariant.success,
                       );
                       NavigatorService.pushNamedAndRemoveUntil(
-                          AppRoutes.productWatchlistScreen);
+                          AppRoutes.productMonitorScreen);
                     }
 
                     if (current.hasError ?? false) {
+                      final errorMessage = current.errorMessage ??
+                          'Login failed. Please check your credentials and try again.';
                       showAppToast(
                         context,
-                        message: 'Login failed. Please check your credentials.',
+                        message: errorMessage,
                         variant: AppToastVariant.error,
                       );
                     }
@@ -156,6 +158,46 @@ class LoginScreenState extends ConsumerState<LoginScreen> {
                       onPressed: (state.isLoading ?? false)
                           ? null
                           : () => onTapLogin(context),
+                    ),
+                    SizedBox(height: 16.h),
+                    // Divider with "or" text
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Divider(
+                            color: appTheme.gray_300,
+                            thickness: 1,
+                          ),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 12.h),
+                          child: Text(
+                            "or",
+                            style: TextStyleHelper.instance.body14MediumInter
+                                .copyWith(color: appTheme.gray_600),
+                          ),
+                        ),
+                        Expanded(
+                          child: Divider(
+                            color: appTheme.gray_300,
+                            thickness: 1,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 16.h),
+                    // Discord login button
+                    CustomButton(
+                      text: "Login with Discord",
+                      backgroundColor: Color(0xFF5865F2), // Discord blurple
+                      textColor: appTheme.whiteCustom,
+                      width: double.infinity,
+                      borderRadius: 12.0,
+                      padding: EdgeInsets.symmetric(
+                          horizontal: 30.h, vertical: 14.h),
+                      onPressed: (state.isLoading ?? false)
+                          ? null
+                          : () => onTapDiscordLogin(context),
                     ),
                     SizedBox(height: 234.h),
                     Container(
@@ -224,6 +266,15 @@ class LoginScreenState extends ConsumerState<LoginScreen> {
     if (_formKey.currentState?.validate() ?? false) {
       ref.read(loginNotifier.notifier).performLogin();
     }
+  }
+
+  /// Handles Discord login button press
+  void onTapDiscordLogin(BuildContext context) {
+    // Get guildId from config
+    final config = ref.read(backendConfigProvider);
+    final guildId = config.discordGuildId;
+    print('🔐 Discord login: Using guildId from config: $guildId');
+    ref.read(loginNotifier.notifier).performDiscordLogin(guildId: guildId);
   }
 
   /// Handles forgot password tap

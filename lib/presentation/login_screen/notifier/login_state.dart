@@ -6,6 +6,7 @@ class LoginState extends Equatable {
   final bool? isLoading;
   final bool? isLoginSuccess;
   final bool? hasError;
+  final String? errorMessage;
   final LoginModel? loginModel;
 
   LoginState({
@@ -14,6 +15,7 @@ class LoginState extends Equatable {
     this.isLoading = false,
     this.isLoginSuccess = false,
     this.hasError = false,
+    this.errorMessage,
     this.loginModel,
   });
 
@@ -24,6 +26,7 @@ class LoginState extends Equatable {
         isLoading,
         isLoginSuccess,
         hasError,
+        errorMessage,
         loginModel,
       ];
 
@@ -33,6 +36,7 @@ class LoginState extends Equatable {
     bool? isLoading,
     bool? isLoginSuccess,
     bool? hasError,
+    String? errorMessage,
     LoginModel? loginModel,
   }) {
     return LoginState(
@@ -41,6 +45,7 @@ class LoginState extends Equatable {
       isLoading: isLoading ?? this.isLoading,
       isLoginSuccess: isLoginSuccess ?? this.isLoginSuccess,
       hasError: hasError ?? this.hasError,
+      errorMessage: errorMessage ?? this.errorMessage,
       loginModel: loginModel ?? this.loginModel,
     );
   }
