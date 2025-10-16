@@ -4,6 +4,7 @@ import '../../core/app_export.dart';
 import '../../widgets/custom_icon_button.dart';
 import '../../widgets/custom_image_view.dart';
 import 'notifier/profile_settings_notifier.dart';
+import '../help_tutorial_screen/help_tutorial_modal.dart';
 
 class ProfileSettingsScreen extends ConsumerStatefulWidget {
   ProfileSettingsScreen({Key? key}) : super(key: key);
@@ -91,6 +92,8 @@ class ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
             ),
             SizedBox(height: 8.h),
             _buildSettingsMenuCard(context),
+            SizedBox(height: 16.h),
+            _buildLogoutButton(context),
           ],
         ),
       ),
@@ -188,9 +191,17 @@ class ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
             context,
             iconPath: ImageConstant.imgFrameRed500,
             title: 'Retailer-Specific Overrides',
-            isLast: true,
             onTap: () {
               onTapRetailerOverrides(context);
+            },
+          ),
+          _buildMenuRow(
+            context,
+            icon: Icons.help_outline,
+            title: 'Help & Tutorial',
+            isLast: true,
+            onTap: () {
+              onTapHelp(context);
             },
           ),
         ],
@@ -201,7 +212,8 @@ class ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
   /// Section Widget
   Widget _buildMenuRow(
     BuildContext context, {
-    required String iconPath,
+    String? iconPath,
+    IconData? icon,
     required String title,
     bool isLast = false,
     VoidCallback? onTap,
@@ -222,11 +234,18 @@ class ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
         ),
         child: Row(
           children: [
-            CustomImageView(
-              imagePath: iconPath,
-              height: 24.h,
-              width: 24.h,
-            ),
+            if (iconPath != null)
+              CustomImageView(
+                imagePath: iconPath,
+                height: 24.h,
+                width: 24.h,
+              )
+            else if (icon != null)
+              Icon(
+                icon,
+                size: 24.h,
+                color: Color(0xFFEF4444),
+              ),
             SizedBox(width: 12.h),
             Expanded(
               child: Text(
@@ -268,5 +287,61 @@ class ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
   /// Navigates to retailer override settings screen.
   void onTapRetailerOverrides(BuildContext context) {
     NavigatorService.pushNamed(AppRoutes.retailerOverrideSettingsScreen);
+  }
+
+  /// Shows help and tutorial modal.
+  void onTapHelp(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => const HelpTutorialModal(),
+    );
+  }
+
+  /// Section Widget
+  Widget _buildLogoutButton(BuildContext context) {
+    return Consumer(
+      builder: (context, ref, _) {
+        final state = ref.watch(profileSettingsNotifier);
+
+        return GestureDetector(
+          onTap: state.isLoading == true
+              ? null
+              : () async {
+                  await ref.read(profileSettingsNotifier.notifier).logout();
+                  // Navigate to login screen after logout
+                  NavigatorService.pushNamedAndRemoveUntil(
+                    AppRoutes.loginScreen,
+                  );
+                },
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 16.h, vertical: 16.h),
+            decoration: BoxDecoration(
+              color: Color(0xFFEF4444),
+              borderRadius: BorderRadius.circular(12.h),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.logout,
+                  color: Colors.white,
+                  size: 20.h,
+                ),
+                SizedBox(width: 8.h),
+                Text(
+                  state.isLoading == true ? 'Logging out...' : 'Logout',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16.fSize,
+                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 }
