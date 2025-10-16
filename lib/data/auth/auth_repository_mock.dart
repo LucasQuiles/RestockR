@@ -177,6 +177,15 @@ class MockAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<bool> updateUserPreferences(Map<String, dynamic> preferences) async {
+    // Simulate network delay
+    await Future.delayed(Duration(milliseconds: 300));
+    print('📝 Mock: Updating user preferences: $preferences');
+    // Mock always succeeds
+    return true;
+  }
+
+  @override
   void dispose() {
     _sessionController.close();
   }

@@ -17,6 +17,7 @@ RestockR is a cross–platform Flutter client for monitoring high–demand produ
   2. Implement authentication + session persistence.
   3. Stand up staging/production build targets and CI.
   4. Run accessibility, performance, and store–readiness reviews.
+- **Backend wiring harness**: See `BACKEND_WIRING_HARNESS.md` for the plug-and-play integration map.
 
 ---
 
@@ -163,18 +164,35 @@ Key entry points:
    - Subsequent runs drop you in the developer menu with quick actions (launch app, run tests/analyzer, manage emulators, reinstall kit).
 
 4. **Configure `env.json`**
-   - Generated automatically if missing. Populate with real values before hitting production services:
+   - Generated automatically if missing. Update endpoints, auth providers, and telemetry keys before hitting real services:
      ```json
      {
+       "RESTOCKR_ENV": "development",
+       "RESTOCKR_API_BASE": "https://api.local.restockr.dev",
+       "RESTOCKR_WS_URL": "wss://ws.local.restockr.dev/restocks",
        "SUPABASE_URL": "https://your-supabase-project.supabase.co",
        "SUPABASE_ANON_KEY": "replace-me",
+       "AUTH_PROVIDER": "supabase",
+       "AUTH_STORAGE_DRIVER": "secure_storage",
+       "AUTH_REFRESH_INTERVAL_MIN": 45,
+       "RESTOCKR_MONITOR_PAGE_SIZE": 25,
+       "WATCHLIST_DEFAULT_SORT": "recent_activity",
+       "WATCHLIST_MAX_ENTRIES": 100,
+       "HISTORY_WINDOW_DAYS": 14,
+       "HISTORY_PAGE_SIZE": 50,
+       "FILTER_DEFAULTS_PROFILE": "standard",
+       "NOTIFICATION_PROVIDER": "fcm",
+       "PUSH_PUBLIC_KEY": "",
+       "ANALYTICS_WRITE_KEY": "",
+       "LOG_LEVEL": "info",
+       "TRACE_SAMPLING_RATE": 0.1,
        "OPENAI_API_KEY": "replace-me",
        "GEMINI_API_KEY": "replace-me",
        "ANTHROPIC_API_KEY": "replace-me",
        "PERPLEXITY_API_KEY": "replace-me"
      }
      ```
-   - File permissions are locked to `600` by the setup script; avoid loosening them.
+   - File permissions are locked to `600` by the setup script; avoid loosening them. See `BACKEND_WIRING_HARNESS.md` for guidance on how each field is used.
 
 ---
 

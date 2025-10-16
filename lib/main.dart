@@ -5,14 +5,23 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'core/app_export.dart';
 
 var globalMessengerKey = GlobalKey<ScaffoldMessengerState>();
-void main() {
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  final backendConfig = await BackendConfig.load();
+
   // 🚨 CRITICAL: Device orientation lock - DO NOT REMOVE
-  Future.wait([
-    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]),
-  ]).then((value) {
-    runApp(ProviderScope(child: MyApp()));
-  });
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+
+  runApp(
+    ProviderScope(
+      overrides: [
+        backendConfigProvider.overrideWithValue(backendConfig),
+      ],
+      child: MyApp(),
+    ),
+  );
 }
 
 class MyApp extends ConsumerWidget {

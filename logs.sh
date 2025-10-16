@@ -15,7 +15,13 @@ source "${SCRIPT_DIR}/lib/common.sh"
 show_log_stats() {
   info "RestockR Log Statistics"
 
-  local total_logs compressed_logs uncompressed_logs total_size
+  local total_logs compressed_logs uncompressed_logs total_size summary
+
+  if summary="$(backend_config_summary)"; then
+    printf "${BOLD}Backend Config:${RESET} %s\n\n" "${summary}"
+  else
+    printf "${YELLOW}Backend Config: env.json missing${RESET}\n\n"
+  fi
 
   total_logs=$(find "${LOG_DIR}" -type f \( -name "session_*.log" -o -name "session_*.log.gz" \) 2>/dev/null | wc -l | tr -d ' ')
   compressed_logs=$(find "${LOG_DIR}" -type f -name "session_*.log.gz" 2>/dev/null | wc -l | tr -d ' ')

@@ -128,6 +128,11 @@ abstract class AuthRepository {
   /// guildId is optional Discord server ID for server-specific auth
   Future<AuthResult> signInWithDiscord({String? guildId});
 
+  /// Update user preferences
+  /// Accepts a map of preferences to update
+  /// Returns true on success, false on failure
+  Future<bool> updateUserPreferences(Map<String, dynamic> preferences);
+
   /// Dispose resources (e.g., close streams)
   void dispose();
 }

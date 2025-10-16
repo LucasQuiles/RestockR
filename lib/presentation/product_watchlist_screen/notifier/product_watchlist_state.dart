@@ -6,6 +6,8 @@ class ProductWatchlistState extends Equatable {
   final int? selectedTabIndex;
   final String? searchQuery;
   final int? subscribedCount;
+  final bool? hasError;
+  final String? errorMessage;
 
   ProductWatchlistState({
     this.productWatchlistModel,
@@ -13,6 +15,8 @@ class ProductWatchlistState extends Equatable {
     this.selectedTabIndex = 0,
     this.searchQuery = '',
     this.subscribedCount = 0,
+    this.hasError = false,
+    this.errorMessage,
   });
 
   @override
@@ -22,6 +26,8 @@ class ProductWatchlistState extends Equatable {
         selectedTabIndex,
         searchQuery,
         subscribedCount,
+        hasError,
+        errorMessage,
       ];
 
   ProductWatchlistState copyWith({
@@ -30,6 +36,8 @@ class ProductWatchlistState extends Equatable {
     int? selectedTabIndex,
     String? searchQuery,
     int? subscribedCount,
+    bool? hasError,
+    String? errorMessage,
   }) {
     return ProductWatchlistState(
       productWatchlistModel:
@@ -38,6 +46,8 @@ class ProductWatchlistState extends Equatable {
       selectedTabIndex: selectedTabIndex ?? this.selectedTabIndex,
       searchQuery: searchQuery ?? this.searchQuery,
       subscribedCount: subscribedCount ?? this.subscribedCount,
+      hasError: hasError ?? this.hasError,
+      errorMessage: errorMessage ?? this.errorMessage,
     );
   }
 }

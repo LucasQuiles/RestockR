@@ -5,6 +5,8 @@ class ProductMonitorState extends Equatable {
   final String? searchQuery;
   final int? selectedTabIndex;
   final bool? isLoading;
+  final bool? hasError;
+  final String? errorMessage;
   final ProductMonitorModel? productMonitorModel;
 
   ProductMonitorState({
@@ -12,6 +14,8 @@ class ProductMonitorState extends Equatable {
     this.searchQuery,
     this.selectedTabIndex = 0,
     this.isLoading = false,
+    this.hasError = false,
+    this.errorMessage,
     this.productMonitorModel,
   });
 
@@ -21,6 +25,8 @@ class ProductMonitorState extends Equatable {
         searchQuery,
         selectedTabIndex,
         isLoading,
+        hasError,
+        errorMessage,
         productMonitorModel,
       ];
 
@@ -29,6 +35,8 @@ class ProductMonitorState extends Equatable {
     String? searchQuery,
     int? selectedTabIndex,
     bool? isLoading,
+    bool? hasError,
+    String? errorMessage,
     ProductMonitorModel? productMonitorModel,
   }) {
     return ProductMonitorState(
@@ -36,6 +44,8 @@ class ProductMonitorState extends Equatable {
       searchQuery: searchQuery ?? this.searchQuery,
       selectedTabIndex: selectedTabIndex ?? this.selectedTabIndex,
       isLoading: isLoading ?? this.isLoading,
+      hasError: hasError ?? this.hasError,
+      errorMessage: errorMessage ?? this.errorMessage,
       productMonitorModel: productMonitorModel ?? this.productMonitorModel,
     );
   }

@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/app_export.dart';
+import '../../../core/data_providers.dart';
+import '../../../data/restocks/restock_feed_repository.dart';
+import '../../../data/restocks/models/restock_alert.dart';
 import '../models/monitor_item_model.dart';
 import '../models/product_monitor_model.dart';
 
@@ -8,15 +12,26 @@ part 'product_monitor_state.dart';
 
 final productMonitorNotifier = StateNotifierProvider.autoDispose<
     ProductMonitorNotifier, ProductMonitorState>(
-  (ref) => ProductMonitorNotifier(
-    ProductMonitorState(
-      productMonitorModel: ProductMonitorModel(),
-    ),
-  ),
+  (ref) {
+    final repository = ref.watch(restockFeedRepositoryProvider);
+    return ProductMonitorNotifier(
+      ProductMonitorState(
+        productMonitorModel: ProductMonitorModel(),
+      ),
+      repository: repository,
+    );
+  },
 );
 
 class ProductMonitorNotifier extends StateNotifier<ProductMonitorState> {
-  ProductMonitorNotifier(ProductMonitorState state) : super(state) {
+  final RestockFeedRepository _repository;
+  final Map<int, String> _indexToAlertId = {}; // Maps UI index to alert ID
+
+  ProductMonitorNotifier(
+    ProductMonitorState state, {
+    required RestockFeedRepository repository,
+  })  : _repository = repository,
+        super(state) {
     initialize();
   }
 
@@ -24,11 +39,66 @@ class ProductMonitorNotifier extends StateNotifier<ProductMonitorState> {
     state = state.copyWith(
       searchController: TextEditingController(),
       selectedTabIndex: 0,
-      isLoading: false,
-      productMonitorModel: ProductMonitorModel(
-        monitorItems: _generateSampleData(),
-      ),
+      isLoading: true,
     );
+    loadAlerts();
+  }
+
+  /// Load recent alerts from repository
+  Future<void> loadAlerts() async {
+    state = state.copyWith(isLoading: true, hasError: false);
+
+    final result = await _repository.getRecentAlerts(limit: 25);
+
+    if (result.isSuccess) {
+      final monitorItems = _convertAlertsToMonitorItems(result.alerts);
+      state = state.copyWith(
+        isLoading: false,
+        productMonitorModel: ProductMonitorModel(monitorItems: monitorItems),
+      );
+    } else {
+      state = state.copyWith(
+        isLoading: false,
+        hasError: true,
+        errorMessage: result.error ?? 'Failed to load alerts',
+      );
+    }
+  }
+
+  /// Convert RestockAlert list to MonitorItemModel list
+  List<MonitorItemModel> _convertAlertsToMonitorItems(
+      List<RestockAlert> alerts) {
+    _indexToAlertId.clear();
+
+    final items = <MonitorItemModel>[];
+    for (int i = 0; i < alerts.length; i++) {
+      final alert = alerts[i];
+      _indexToAlertId[i] = alert.id;
+
+      items.add(MonitorItemModel(
+        date: DateFormat('E, dd MMM').format(alert.timestamp),
+        time: DateFormat('hh:mm:ss a').format(alert.timestamp),
+        productImage: alert.image ?? ImageConstant.imgRectangle70,
+        productTitle: alert.product,
+        storeIcon: _getStoreIcon(alert.store),
+        storeName: alert.store,
+        quantity: 'N/A', // Backend doesn't provide quantity yet
+        price: alert.price ?? 'N/A',
+        downVoteCount: alert.reactions.no,
+        upVoteCount: alert.reactions.yes,
+      ));
+    }
+
+    return items;
+  }
+
+  /// Get store icon based on store name
+  String _getStoreIcon(String store) {
+    final storeLower = store.toLowerCase();
+    if (storeLower.contains('bestbuy')) return ImageConstant.imgEllipse10;
+    if (storeLower.contains('amazon')) return ImageConstant.imgEllipse11;
+    if (storeLower.contains('target')) return ImageConstant.imgEllipse10;
+    return ImageConstant.imgEllipse10; // Default icon
   }
 
   void onSearchChanged(String value) {
@@ -44,7 +114,12 @@ class ProductMonitorNotifier extends StateNotifier<ProductMonitorState> {
     );
   }
 
-  void onDownVote(int index) {
+  /// Submit downvote reaction
+  Future<void> onDownVote(int index) async {
+    final alertId = _indexToAlertId[index];
+    if (alertId == null) return;
+
+    // Optimistically update UI
     final items = List<MonitorItemModel>.from(
         state.productMonitorModel?.monitorItems ?? []);
     if (index < items.length) {
@@ -57,10 +132,29 @@ class ProductMonitorNotifier extends StateNotifier<ProductMonitorState> {
           monitorItems: items,
         ),
       );
+
+      // Submit to backend
+      final success = await _repository.submitReaction(alertId, false);
+      if (!success) {
+        // Revert optimistic update on failure
+        items[index] = items[index].copyWith(
+          downVoteCount: (items[index].downVoteCount ?? 1) - 1,
+        );
+        state = state.copyWith(
+          productMonitorModel: state.productMonitorModel?.copyWith(
+            monitorItems: items,
+          ),
+        );
+      }
     }
   }
 
-  void onUpVote(int index) {
+  /// Submit upvote reaction
+  Future<void> onUpVote(int index) async {
+    final alertId = _indexToAlertId[index];
+    if (alertId == null) return;
+
+    // Optimistically update UI
     final items = List<MonitorItemModel>.from(
         state.productMonitorModel?.monitorItems ?? []);
     if (index < items.length) {
@@ -73,51 +167,21 @@ class ProductMonitorNotifier extends StateNotifier<ProductMonitorState> {
           monitorItems: items,
         ),
       );
-    }
-  }
 
-  List<MonitorItemModel> _generateSampleData() {
-    return [
-      MonitorItemModel(
-        date: "Thur, 23 Sept",
-        time: "10:32:00 PM",
-        productImage: ImageConstant.imgRectangle70,
-        productTitle:
-            "Magic:The Gathering | Avatar:The Last Airbender Collector Booster\ntarg",
-        storeIcon: ImageConstant.imgEllipse10,
-        storeName: "BestBuy",
-        quantity: "N/A",
-        price: "\$23.89",
-        downVoteCount: 0,
-        upVoteCount: 0,
-      ),
-      MonitorItemModel(
-        date: "Thur, 23 Sept",
-        time: "10:32:00 PM",
-        productImage: ImageConstant.imgRectangle70,
-        productTitle:
-            "Magic:The Gathering | Avatar:The Last Airbender Collector Booster\ntarg",
-        storeIcon: ImageConstant.imgEllipse11,
-        storeName: "Amazon",
-        quantity: "188",
-        price: "\$23.89",
-        downVoteCount: 0,
-        upVoteCount: 99,
-      ),
-      MonitorItemModel(
-        date: "Thur, 23 Sept",
-        time: "10:32:00 PM",
-        productImage: ImageConstant.imgRectangle70,
-        productTitle:
-            "Magic:The Gathering | Avatar:The Last Airbender Collector Booster\ntarg",
-        storeIcon: ImageConstant.imgEllipse10,
-        storeName: "Target",
-        quantity: "67",
-        price: "\$23.89",
-        downVoteCount: 12,
-        upVoteCount: 0,
-      ),
-    ];
+      // Submit to backend
+      final success = await _repository.submitReaction(alertId, true);
+      if (!success) {
+        // Revert optimistic update on failure
+        items[index] = items[index].copyWith(
+          upVoteCount: (items[index].upVoteCount ?? 1) - 1,
+        );
+        state = state.copyWith(
+          productMonitorModel: state.productMonitorModel?.copyWith(
+            monitorItems: items,
+          ),
+        );
+      }
+    }
   }
 
   @override

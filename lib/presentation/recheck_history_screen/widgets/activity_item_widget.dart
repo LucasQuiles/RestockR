@@ -23,11 +23,10 @@ class ActivityItemWidget extends StatelessWidget {
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        margin: EdgeInsets.symmetric(vertical: 4.h),
-        padding: EdgeInsets.symmetric(horizontal: 16.h, vertical: 12.h),
+        padding: EdgeInsets.symmetric(horizontal: 12.h, vertical: 10.h),
         decoration: BoxDecoration(
           color: appTheme.white_A700,
-          borderRadius: BorderRadius.circular(16.h),
+          borderRadius: BorderRadius.circular(12.h),
           border: Border.all(color: appTheme.gray_300, width: 1),
         ),
         child: Row(

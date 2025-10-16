@@ -29,6 +29,19 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
 fi
 
 # ============================================================================
+# CONFIGURATION SUMMARY
+# ============================================================================
+
+print_backend_config_summary() {
+  local summary
+  if summary="$(backend_config_summary)"; then
+    info "Backend config → ${summary}"
+  else
+    warn "env.json not found — run ./envsetup.sh to generate it."
+  fi
+}
+
+# ============================================================================
 # FLUTTER EXECUTION FUNCTIONS
 # ============================================================================
 
@@ -506,7 +519,7 @@ show_developer_menu() {
   printf "  ${BLUE}[5]${RESET} Run flutter doctor\n"
   printf "  ${YELLOW}[6]${RESET} Run flutter test\n"
   printf "  ${YELLOW}[7]${RESET} Run flutter analyze\n"
-  printf "  ${DIM}[8]${RESET} Back to main menu\n\n"
+  printf "  ${RED}[8]${RESET} Back to main menu\n\n"
 }
 
 developer_menu() {
@@ -592,6 +605,7 @@ main() {
   print_header
   info "RestockR Dev Kit Launcher"
   info "Session log: ${LOG_FILE}"
+  print_backend_config_summary
 
   local has_install auto_launch_done=false
 

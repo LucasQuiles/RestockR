@@ -196,7 +196,7 @@ perform_install() {
 
   printf "${BOLD}Next Steps:${RESET}\n"
   printf "  1. Run ${BLUE}./start.sh${RESET} to launch the app\n"
-  printf "  2. Configure API keys in ${BLUE}env.json${RESET} when ready\n"
+  printf "  2. Configure endpoints & keys in ${BLUE}env.json${RESET} when ready\n"
   printf "  3. Use ${BLUE}./emulators.sh${RESET} to manage devices\n\n"
 }
 

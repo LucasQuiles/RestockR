@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../core/app_export.dart';
-import '../../widgets/custom_dropdown.dart';
 import '../../widgets/custom_icon_button.dart';
 import '../../widgets/custom_search_view.dart';
 import './models/recheck_history_model.dart';
 import './widgets/activity_item_widget.dart';
+import './widgets/history_detail_modal.dart';
+import './widgets/heatmap_calendar.dart';
 import 'notifier/recheck_history_notifier.dart';
 
 class RecheckHistoryScreen extends ConsumerStatefulWidget {
@@ -135,91 +136,42 @@ class RecheckHistoryScreenState extends ConsumerState<RecheckHistoryScreen> {
   /// Section Widget
   Widget _buildContentSection(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _buildCalendarSection(context),
-        SizedBox(height: 16.h),
+        SizedBox(height: 20.h),
         _buildActivityListSection(context),
       ],
     );
   }
 
   /// Section Widget
-  Widget _buildMonthDropdown(BuildContext context) {
+  Widget _buildCalendarSection(BuildContext context) {
     return Consumer(
       builder: (context, ref, _) {
         final state = ref.watch(recheckHistoryNotifier);
-        return CustomDropdown(
-          hintText: "September 2025",
-          width: "48%",
-          iconPath: ImageConstant.imgFrameBlack900,
-          contentPadding: EdgeInsets.only(
-            top: 12.h,
-            right: 36.h,
-            bottom: 12.h,
-            left: 12.h,
-          ),
-          items: state.recheckHistoryModel?.monthOptions ?? [],
-          value: state.recheckHistoryModel?.selectedMonth,
-          onChanged: (value) {
-            ref
-                .read(recheckHistoryNotifier.notifier)
-                .onMonthChanged(value ?? '');
+        final selectedDate =
+            state.recheckHistoryModel?.selectedDate ?? DateTime.now();
+        final firstDate = DateTime(2020);
+        final lastDate = DateTime(2030);
+
+        DateTime clampedDate = selectedDate;
+        if (clampedDate.isBefore(firstDate)) {
+          clampedDate = firstDate;
+        } else if (clampedDate.isAfter(lastDate)) {
+          clampedDate = lastDate;
+        }
+
+        return HeatmapCalendar(
+          selectedDate: clampedDate,
+          firstDate: firstDate,
+          lastDate: lastDate,
+          dailyActivityMap: state.dailyActivityMap,
+          onDateChanged: (date) {
+            ref.read(recheckHistoryNotifier.notifier).onDateChanged(date);
           },
         );
       },
-    );
-  }
-
-  /// Section Widget
-  Widget _buildCalendarSection(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildMonthDropdown(context),
-        SizedBox(height: 8.h),
-        Consumer(
-          builder: (context, ref, _) {
-            final state = ref.watch(recheckHistoryNotifier);
-            final selectedDate =
-                state.recheckHistoryModel?.selectedDate ?? DateTime.now();
-            final firstDate = DateTime(2020);
-            final lastDate = DateTime(2030);
-
-            DateTime clampedDate = selectedDate;
-            if (clampedDate.isBefore(firstDate)) {
-              clampedDate = firstDate;
-            } else if (clampedDate.isAfter(lastDate)) {
-              clampedDate = lastDate;
-            }
-
-            return Theme(
-              data: Theme.of(context).copyWith(
-                colorScheme: ColorScheme.light(
-                  primary: appTheme.black_900,
-                  onPrimary: appTheme.white_A700,
-                  surface: appTheme.gray_100,
-                  onSurface: appTheme.gray_900,
-                ),
-                textButtonTheme: TextButtonThemeData(
-                  style: TextButton.styleFrom(
-                    foregroundColor: appTheme.black_900,
-                  ),
-                ),
-              ),
-              child: CalendarDatePicker(
-                key: ValueKey<DateTime>(clampedDate),
-                initialDate: clampedDate,
-                firstDate: firstDate,
-                lastDate: lastDate,
-                onDateChanged: (date) {
-                  ref.read(recheckHistoryNotifier.notifier).onDateChanged(date);
-                },
-              ),
-            );
-          },
-        ),
-      ],
     );
   }
 
@@ -278,7 +230,7 @@ class RecheckHistoryScreenState extends ConsumerState<RecheckHistoryScreen> {
         final state = ref.watch(recheckHistoryNotifier);
 
         return Column(
-          spacing: 4.h,
+          spacing: 8.h,
           children: [
             // High Activity Items
             ...List.generate(
@@ -330,8 +282,50 @@ class RecheckHistoryScreenState extends ConsumerState<RecheckHistoryScreen> {
   }
 
   /// Handles activity item tap
-  void _onTapActivityItem(BuildContext context, ActivityItemModel item) {
-    // Handle activity item selection
-    ref.read(recheckHistoryNotifier.notifier).onActivityItemTapped(item);
+  void _onTapActivityItem(BuildContext context, ActivityItemModel item) async {
+    // Trigger the notifier to fetch details
+    await ref.read(recheckHistoryNotifier.notifier).onActivityItemTapped(item);
+
+    // Get the current state after fetching
+    final state = ref.read(recheckHistoryNotifier);
+
+    // Show the modal with the fetched details
+    if (state.historyDetails != null && !state.isLoadingDetails!) {
+      _showHistoryDetailModal(context, item);
+    } else if (state.detailsError != null) {
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(state.detailsError ?? 'Failed to load details'),
+          backgroundColor: appTheme.red_500,
+        ),
+      );
+    }
+  }
+
+  /// Shows the history detail modal
+  void _showHistoryDetailModal(BuildContext context, ActivityItemModel item) {
+    final state = ref.read(recheckHistoryNotifier);
+    final selectedDate = state.recheckHistoryModel?.selectedDate ?? DateTime.now();
+
+    // Extract hour from time string
+    final timeStr = item.time ?? '0:00';
+    final hour = int.tryParse(timeStr.split(':')[0]) ?? 0;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (context, scrollController) => HistoryDetailModal(
+          selectedDate: selectedDate,
+          hour: hour,
+          alerts: state.historyDetails ?? [],
+        ),
+      ),
+    );
   }
 }

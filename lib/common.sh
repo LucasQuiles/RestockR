@@ -601,15 +601,51 @@ suggest_cocoapods_failed() {
   printf "  4. Check log file: ${LOG_FILE}\n\n"
 }
 
+backend_config_summary() {
+  local env_file="${PROJECT_ROOT}/env.json"
+
+  if [[ ! -f "${env_file}" ]]; then
+    return 1
+  fi
+
+  if command -v python3 >/dev/null 2>&1; then
+    RESTOCKR_ENV_FILE="${env_file}" python3 - <<'PY'
+import json, os, pathlib, sys
+
+path = pathlib.Path(os.environ.get("RESTOCKR_ENV_FILE", "env.json"))
+try:
+    with path.open() as fp:
+        data = json.load(fp)
+except Exception:
+    sys.exit(1)
+
+env = data.get("RESTOCKR_ENV", "unknown")
+api = data.get("RESTOCKR_API_BASE", "") or "API unset"
+ws = data.get("RESTOCKR_WS_URL", "") or "ws disabled"
+print(f"Env: {env} • API: {api} • WS: {ws}", end="")
+PY
+    return $?
+  fi
+
+  local env_value api_value ws_value
+  env_value="$(grep -o '"RESTOCKR_ENV"[[:space:]]*:[[:space:]]*"[^"]*"' "${env_file}" 2>/dev/null | head -n1 | sed 's/.*:"\(.*\)"/\1/' || true)"
+  api_value="$(grep -o '"RESTOCKR_API_BASE"[[:space:]]*:[[:space:]]*"[^"]*"' "${env_file}" 2>/dev/null | head -n1 | sed 's/.*:"\(.*\)"/\1/' || true)"
+  ws_value="$(grep -o '"RESTOCKR_WS_URL"[[:space:]]*:[[:space:]]*"[^"]*"' "${env_file}" 2>/dev/null | head -n1 | sed 's/.*:"\(.*\)"/\1/' || true)"
+  printf "Env: %s • API: %s • WS: %s" \
+    "${env_value:-unknown}" \
+    "${api_value:-API unset}" \
+    "${ws_value:-ws disabled}"
+}
+
 suggest_env_json_missing() {
   warn "env.json not found or incomplete"
   printf "\n${YELLOW}${BOLD}What to do next:${RESET}\n"
   printf "  1. Run: ./envsetup.sh to create template\n"
-  printf "  2. Edit env.json with your API keys\n"
+  printf "  2. Edit env.json with your endpoints and keys\n"
   printf "  3. Required keys:\n"
-  printf "     • GOOGLE_MAPS_API_KEY\n"
-  printf "     • EBAY_APP_ID\n"
-  printf "     • BACKEND_API_URL\n"
+  printf "     • RESTOCKR_API_BASE\n"
+  printf "     • SUPABASE_URL\n"
+  printf "     • SUPABASE_ANON_KEY\n"
   printf "  4. Ensure file permissions: chmod 600 env.json\n\n"
 }
 

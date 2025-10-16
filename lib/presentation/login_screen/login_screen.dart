@@ -86,15 +86,46 @@ class LoginScreenState extends ConsumerState<LoginScreen> {
 
                 ref.listen(
                   loginNotifier,
-                  (previous, current) {
+                  (previous, current) async {
                     if (current.isLoginSuccess ?? false) {
-                      showAppToast(
-                        context,
-                        message: 'Login successful',
-                        variant: AppToastVariant.success,
-                      );
-                      NavigatorService.pushNamedAndRemoveUntil(
-                          AppRoutes.productMonitorScreen);
+                      // Wait a bit for auth state to propagate through the stream
+                      await Future.delayed(Duration(milliseconds: 100));
+
+                      // Verify auth state before navigating
+                      final authStatus = ref.read(authSessionProvider);
+                      print('🔐 Auth status after login: $authStatus');
+
+                      if (authStatus == AuthSessionStatus.authenticated) {
+                        showAppToast(
+                          context,
+                          message: 'Login successful',
+                          variant: AppToastVariant.success,
+                        );
+                        NavigatorService.pushNamedAndRemoveUntil(
+                            AppRoutes.productWatchlistScreen);
+                      } else {
+                        print('⚠️ Login success but auth state not updated yet: $authStatus');
+                        // Retry after a longer delay
+                        await Future.delayed(Duration(milliseconds: 400));
+                        final retryStatus = ref.read(authSessionProvider);
+                        print('🔐 Retry auth status: $retryStatus');
+
+                        if (retryStatus == AuthSessionStatus.authenticated) {
+                          showAppToast(
+                            context,
+                            message: 'Login successful',
+                            variant: AppToastVariant.success,
+                          );
+                          NavigatorService.pushNamedAndRemoveUntil(
+                              AppRoutes.productWatchlistScreen);
+                        } else {
+                          showAppToast(
+                            context,
+                            message: 'Authentication state error. Please try logging in again.',
+                            variant: AppToastVariant.error,
+                          );
+                        }
+                      }
                     }
 
                     if (current.hasError ?? false) {

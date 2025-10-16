@@ -9,13 +9,28 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:restockr/main.dart';
+import 'package:restockr/core/config/backend_config.dart';
 import 'package:restockr/core/utils/navigator_service.dart';
+import 'package:restockr/main.dart';
 import 'package:restockr/routes/app_routes.dart';
 
 void main() {
   testWidgets('MyApp configures MaterialApp with splash route', (tester) async {
-    await tester.pumpWidget(ProviderScope(child: MyApp()));
+    final backendConfig = BackendConfig.fromMap({
+      'RESTOCKR_ENV': 'test',
+      'RESTOCKR_API_BASE': 'https://api.test.restockr.dev',
+      'SUPABASE_URL': 'https://test.supabase.io',
+      'SUPABASE_ANON_KEY': 'test-key',
+    });
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          backendConfigProvider.overrideWithValue(backendConfig),
+        ],
+        child: MyApp(),
+      ),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 3000));
 

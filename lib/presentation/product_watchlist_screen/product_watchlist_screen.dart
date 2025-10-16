@@ -16,7 +16,7 @@ class ProductWatchlistScreen extends ConsumerStatefulWidget {
 class ProductWatchlistScreenState
     extends ConsumerState<ProductWatchlistScreen> {
   GlobalKey<NavigatorState> navigatorKey = GlobalKey();
-  int _selectedIndex = 3;
+  int _selectedIndex = 1; // Default to Monitor tab
 
   @override
   void initState() {
@@ -29,7 +29,7 @@ class ProductWatchlistScreenState
       body: SafeArea(
         child: Navigator(
           key: navigatorKey,
-          initialRoute: AppRoutes.productWatchlistScreenInitialPage,
+          initialRoute: AppRoutes.productMonitorScreen,
           onGenerateRoute: (routeSetting) => PageRouteBuilder(
             pageBuilder: (ctx, a1, a2) =>
                 getCurrentPage(context, routeSetting.name!),

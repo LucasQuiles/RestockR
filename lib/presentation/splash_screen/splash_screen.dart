@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/app_export.dart';
+import '../../core/auth/auth_status.dart';
 import '../../widgets/custom_image_view.dart';
 import 'notifier/splash_notifier.dart';
 
@@ -50,11 +51,30 @@ class SplashScreenState extends ConsumerState<SplashScreen>
   void _startSplashSequence() {
     _animationController.forward();
 
+    // Wait for animation, then check auth status
     Future.delayed(Duration(milliseconds: 2800), () {
       if (mounted) {
-        NavigatorService.pushNamedAndRemoveUntil(AppRoutes.loginScreen);
+        _navigateBasedOnAuthStatus();
       }
     });
+  }
+
+  void _navigateBasedOnAuthStatus() {
+    final authStatus = ref.read(authSessionProvider);
+
+    switch (authStatus) {
+      case AuthSessionStatus.authenticated:
+        // User is logged in, go to main app with bottom navigation
+        NavigatorService.pushNamedAndRemoveUntil(
+          AppRoutes.productWatchlistScreen,
+        );
+        break;
+      case AuthSessionStatus.unauthenticated:
+      case AuthSessionStatus.unknown:
+        // Not logged in or unknown, go to login
+        NavigatorService.pushNamedAndRemoveUntil(AppRoutes.loginScreen);
+        break;
+    }
   }
 
   @override
@@ -65,11 +85,47 @@ class SplashScreenState extends ConsumerState<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final backendConfig = ref.watch(backendConfigProvider);
+    final envName = backendConfig.environment.toUpperCase();
+    final showEnvBadge =
+        backendConfig.environment.toLowerCase() != 'production';
+
     return Scaffold(
       backgroundColor: appTheme.gray_100,
       body: SafeArea(
-        child: Center(
-          child: _buildLogoSection(context),
+        child: Stack(
+          children: [
+            Center(
+              child: _buildLogoSection(context),
+            ),
+            if (showEnvBadge)
+              Positioned(
+                bottom: 24.h,
+                left: 0,
+                right: 0,
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 12.h,
+                      vertical: 6.h,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.6),
+                      borderRadius: BorderRadius.circular(12.h),
+                    ),
+                    child: Text(
+                      envName,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12.fSize,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );

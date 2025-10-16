@@ -261,15 +261,14 @@ class AuthRepositoryImpl implements AuthRepository {
       // IMPORTANT: guildId is required by the backend!
       // Without it, Discord OAuth may fail
       final guildParam = guildId != null ? '?guildId=$guildId' : '';
-      final oauthUrl = '$baseUrl/api/auth/discord$guildParam';
+      final oauthUrl = '$baseUrl/api/auth/discord/mobile$guildParam';
 
       print('🔐 Starting Discord OAuth flow...');
       print('🔐 OAuth URL: $oauthUrl');
 
       // Define callback URL scheme
-      // Using custom scheme 'restockr' to capture restockr://... URLs
-      // The backend needs to detect mobile and redirect to restockr://callback?token=...
-      // For web it redirects to https://restockr.app/login?token=...
+      // Using custom scheme 'restockr' to capture restockr://callback?token=...
+      // The backend detects mobile and redirects to restockr:// instead of https://
       final callbackUrlScheme = 'restockr';
 
       // Launch OAuth flow with flutter_web_auth_2
@@ -283,11 +282,8 @@ class AuthRepositoryImpl implements AuthRepository {
       print('🔐 OAuth callback URL: $result');
 
       // Extract token or error from callback URL
-      // Flow:
-      // 1. Backend redirects to https://restockr.app/login?token=xxx
-      // 2. The login.html page auto-redirects to restockr://callback?token=xxx
-      // 3. flutter_web_auth_2 captures the restockr:// URL and returns it here
-      // Result will be: restockr://callback?token=xxx or restockr://callback?error=unauthorized
+      // Backend should redirect to: restockr://callback?token=xxx (for mobile)
+      // or https://restockr.app/login?token=xxx (for web)
       final uri = Uri.parse(result);
       print('🔐 Parsed URI - scheme: ${uri.scheme}, host: ${uri.host}, path: ${uri.path}');
       print('🔐 Query parameters: ${uri.queryParameters}');
@@ -333,6 +329,33 @@ class AuthRepositoryImpl implements AuthRepository {
       _updateStatus(AuthSessionStatus.unauthenticated);
       print('🔐 Exception: ${e.toString()}');
       return AuthResult.failure('Discord OAuth error: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<bool> updateUserPreferences(Map<String, dynamic> preferences) async {
+    try {
+      print('📝 Updating user preferences: $preferences');
+
+      final response = await _dio.patch(
+        '/api/me',
+        data: preferences,
+      );
+
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        print('✅ User preferences updated successfully');
+        return true;
+      } else {
+        print('❌ Failed to update preferences: ${response.statusCode}');
+        return false;
+      }
+    } on DioException catch (e) {
+      final errorMessage = _extractErrorMessage(e);
+      print('❌ Preferences update error: $errorMessage');
+      return false;
+    } catch (e) {
+      print('❌ Unexpected error updating preferences: $e');
+      return false;
     }
   }
 
