@@ -42,22 +42,24 @@ class RestockFeedWSClient {
       }
 
       final optionsBuilder = IO.OptionBuilder()
-          .setTransports(['polling', 'websocket'])  // Start with polling, upgrade to websocket
+          .setTransports(['websocket'])  // WebSocket only (bypass long-polling on iOS)
           .disableAutoConnect()
-          .setTimeout(30000)  // 30 second timeout
+          .setTimeout(60000)  // 60 second timeout (increased for debugging)
           .setPath('/socket.io/')  // Explicit Socket.IO path
-          .setQuery({'EIO': '4'})  // Explicitly set Engine.IO v4
+          .setQuery({'EIO': '4', 'transport': 'websocket'})  // Force WebSocket transport
           .enableReconnection()  // Auto-reconnect on disconnect
           .setReconnectionDelay(1000)  // Quick reconnect
           .enableForceNew();  // Force new connection
 
-      // Build headers map
-      final headers = <String, String>{};
-
-      // Add authentication header if token is provided
+      // CRITICAL: Backend expects JWT in socket.handshake.auth.token
       if (authToken != null) {
-        headers['Authorization'] = 'Bearer $authToken';
+        optionsBuilder.setAuth({'token': authToken});
+        print('[WebSocket] JWT auth configured in handshake.auth.token');
+        print('[WebSocket] Token preview: ${authToken.substring(0, 50)}...');
       }
+
+      // Build headers map for cookies (session-based auth fallback)
+      final headers = <String, String>{};
 
       // Add cookies if provided (for session-based auth)
       if (cookies != null && cookies!.isNotEmpty) {
@@ -85,17 +87,36 @@ class RestockFeedWSClient {
       });
 
       _socket?.onConnectError((error) {
-        print('[WebSocket] Connection error: $error');
-        print('[WebSocket] Failed to connect to: $wsUrl');
-        print('[WebSocket] Error type: ${error.runtimeType}');
+        print('[WebSocket] ❌ Connection error: $error');
+        print('[WebSocket] ❌ Failed to connect to: $wsUrl');
+        print('[WebSocket] ❌ Error type: ${error.runtimeType}');
         if (error is Map) {
-          print('[WebSocket] Error details: $error');
+          print('[WebSocket] ❌ Error details: $error');
+        }
+        if (error != null) {
+          print('[WebSocket] ❌ Error string: ${error.toString()}');
         }
         _isConnected = false;
       });
 
       _socket?.onError((error) {
-        print('[WebSocket] Socket error: $error');
+        print('[WebSocket] ❌ Socket error: $error');
+        print('[WebSocket] ❌ Error type: ${error?.runtimeType}');
+      });
+
+      // Add connection timeout detection
+      _socket?.on('connect_timeout', (_) {
+        print('[WebSocket] ❌ Connection timeout after 30s');
+      });
+
+      // Add authentication error detection
+      _socket?.on('error', (data) {
+        print('[WebSocket] ❌ Server error event: $data');
+      });
+
+      // Debug: Log all Socket.IO events
+      _socket?.onAny((event, data) {
+        print('[WebSocket] 📡 Event: $event, Data: $data');
       });
 
       // Note: onConnectTimeout removed in socket_io_client v3.x
@@ -167,6 +188,38 @@ class RestockFeedWSClient {
         callback(alertId, yesCount, noCount, username);
       } catch (e) {
         print('[WebSocket] Error parsing reaction update: $e');
+      }
+    });
+  }
+
+  /// Sync watchlist SKUs to backend via WebSocket
+  /// Backend will update the database and echo back to this client
+  void syncWatchlist(List<String> skus) {
+    if (!_isConnected || _socket == null) {
+      print('[WebSocket] Cannot sync watchlist: not connected');
+      return;
+    }
+
+    try {
+      _socket!.emit('watchlistUpdate', skus);
+      print('[WebSocket] Watchlist synced: ${skus.length} items');
+    } catch (e) {
+      print('[WebSocket] Error syncing watchlist: $e');
+    }
+  }
+
+  /// Listen for watchlist updates from server
+  /// This fires when the backend confirms the update or when another device syncs
+  void onWatchlistUpdate(Function(List<String>) callback) {
+    _socket?.on('watchlistUpdate', (data) {
+      try {
+        final skus = (data as List<dynamic>)
+            .map((e) => e.toString())
+            .toList();
+        print('[WebSocket] Watchlist update received: ${skus.length} items');
+        callback(skus);
+      } catch (e) {
+        print('[WebSocket] Error parsing watchlist update: $e');
       }
     });
   }

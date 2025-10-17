@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../core/config/backend_config.dart';
+import '../restocks/restock_feed_repository_impl.dart';
 import 'watchlist_repository.dart';
 import 'models/watchlist_item.dart';
 
@@ -9,6 +10,7 @@ class WatchlistRepositoryImpl implements WatchlistRepository {
   final BackendConfig config;
   final Dio _dio;
   final FlutterSecureStorage _secureStorage;
+  final RestockFeedRepositoryImpl? _restockFeedRepo;
 
   static const _tokenKey = 'restockr_jwt_token';
 
@@ -16,8 +18,10 @@ class WatchlistRepositoryImpl implements WatchlistRepository {
     required this.config,
     Dio? dio,
     FlutterSecureStorage? secureStorage,
+    RestockFeedRepositoryImpl? restockFeedRepo,
   })  : _dio = dio ?? Dio(),
-        _secureStorage = secureStorage ?? const FlutterSecureStorage() {
+        _secureStorage = secureStorage ?? const FlutterSecureStorage(),
+        _restockFeedRepo = restockFeedRepo {
     _configureDio();
   }
 
@@ -87,6 +91,10 @@ class WatchlistRepositoryImpl implements WatchlistRepository {
                   ?.map((e) => e.toString())
                   .toList() ??
               [];
+
+          // Sync via WebSocket for real-time multi-device updates
+          _restockFeedRepo?.syncWatchlistViaWebSocket(productSkus);
+
           return WatchlistResult.successResult(productSkus);
         }
       }
@@ -114,6 +122,10 @@ class WatchlistRepositoryImpl implements WatchlistRepository {
                   ?.map((e) => e.toString())
                   .toList() ??
               [];
+
+          // Sync via WebSocket for real-time multi-device updates
+          _restockFeedRepo?.syncWatchlistViaWebSocket(productSkus);
+
           return WatchlistResult.successResult(productSkus);
         }
       }
