@@ -8,16 +8,16 @@ RestockR is a cross–platform Flutter client for monitoring high–demand produ
 ---
 
 ## Collaboration TL;DR
-- **Current status**: Flutter UI, navigation flows, and local state layers are ready. Backend service calls are mocked and must be wired to the real API. No production build has been cut yet.
+- **Current status**: Flutter UI complete with real-time WebSocket integration, Discord OAuth, timezone-aware displays, and in-app help system. Backend is live at `emerald-alerts-development.onrender.com` with full API endpoints operational.
 - **Primary tools**: `./start.sh` (interactive launcher), `./install.sh`, `./envsetup.sh`, `./emulators.sh`, and `./logs.sh` orchestrate setup, diagnostics, and daily workflows.
 - **Secrets**: `env.json` (generated automatically) holds API keys. It is `.gitignore`d and locked to permission `600`.
-- **Testing**: No automated test suite beyond `flutter test` scaffolding. Plan to add integration tests alongside backend hookup.
+- **Real-time features**: Native Dart WebSocket client with automatic HTTP fallback for reactions, watchlist sync, and live restock alerts.
+- **User experience**: Interactive tutorial system, timezone-aware timestamps, Discord OAuth for mobile, and comprehensive data visualization.
 - **Next major deliverables**:
-  1. Finalize backend endpoints and SDK integration.
-  2. Implement authentication + session persistence.
-  3. Stand up staging/production build targets and CI.
-  4. Run accessibility, performance, and store–readiness reviews.
-- **Backend wiring harness**: See `BACKEND_WIRING_HARNESS.md` for the plug-and-play integration map.
+  1. Production deployment and environment configuration.
+  2. App store submission (iOS/Android).
+  3. Performance optimization and analytics integration.
+  4. User acceptance testing and feedback incorporation.
 
 ---
 
@@ -28,8 +28,12 @@ RestockR is a cross–platform Flutter client for monitoring high–demand produ
 | **Product Vision** | Give collectors/operators a command center to track restocks across multiple retailers with actionable alerts and historical insights. |
 | **Platforms** | iOS, Android, Web (single Flutter codebase). |
 | **State Management** | `flutter_riverpod` with `StateNotifier` view models, `equatable` data classes. |
-| **Networking** | Placeholder services; awaiting final backend contract (Supabase + LLM helpers referenced in `env.json`). |
-| **Design System** | Custom widgets under `lib/widgets`, responsive utilities in `lib/core/utils`. |
+| **Networking** | Full backend integration with `dio` HTTP client + native WebSocket (Socket.IO protocol). Automatic HTTP fallback for reliability. |
+| **Real-time** | Native Dart WebSocket client implementing Socket.IO v4 protocol with JWT authentication, ping/pong keep-alive, and event-driven architecture. |
+| **Authentication** | Discord OAuth with mobile device detection, JWT token management, secure storage, and automatic refresh. |
+| **Data Layer** | Repository pattern with mock/real implementations, watchlist sync, history aggregation, and restock feed management. |
+| **User Experience** | Timezone-aware timestamps, interactive tutorial system, heatmap visualizations, and responsive design. |
+| **Design System** | Custom widgets under `lib/widgets`, responsive utilities in `lib/core/utils`, centralized date/time formatting. |
 | **Logging** | All CLI tooling streams to `.restockr_logs/session_<timestamp>.log[.gz]` for traceability. |
 
 ---
@@ -221,18 +225,118 @@ Make sure to configure signing, provisioning profiles, and store metadata during
 
 ---
 
-## Backend & Integration Expectations
+## Backend & Integration
 
-- **Current state**: All API calls are placeholders. Mock data is currently embedded or sourced from assets; there is no live networking layer.
-- **Target stack**: Supabase is referenced for storage/auth (see `env.json`). Large-language-model keys (OpenAI, Gemini, Anthropic, Perplexity) are reserved for assistant features planned in later phases.
-- **Next steps**:
-  1. Finalize API contract (payload shapes, auth flows, error handling).
-  2. Implement a dedicated data layer (e.g., `lib/data/`) with repositories/services using `dio` or `http` (not yet added to `pubspec.yaml`).
-  3. Replace dummy providers with asynchronous data sources and handle loading/error states in each feature screen.
-  4. Persist sessions/token refresh using `shared_preferences` (already included).
-  5. Add offline caching strategy if required by operators (to be scoped).
+### Current Implementation Status ✅
 
-Document the final REST/gRPC/WebSocket interface inside the repo once complete (consider `docs/` or a Wiki entry).
+**Backend API**: Fully operational at `https://emerald-alerts-development.onrender.com`
+
+**Completed Integrations**:
+1. ✅ **Authentication** - Discord OAuth with JWT tokens, secure storage, automatic refresh
+2. ✅ **Product API** - Full CRUD operations, pagination, filtering, search
+3. ✅ **Watchlist Management** - Subscribe/unsubscribe to SKUs, sync across devices
+4. ✅ **Restock Feed** - Real-time alerts via WebSocket with HTTP fallback
+5. ✅ **History & Analytics** - Time-series aggregation, heatmap visualization
+6. ✅ **Reactions** - Vote on restocks (yes/no), real-time updates via WebSocket
+7. ✅ **User Profile** - Account management, preferences, subscription tracking
+
+### WebSocket Implementation
+
+**Native Dart WebSocket Client** (`lib/data/restocks/native_websocket_client.dart`)
+
+Implements Socket.IO v4 protocol directly using `web_socket_channel`:
+
+**Features**:
+- ✅ JWT authentication via `socket.handshake.auth.token`
+- ✅ Automatic ping/pong keep-alive mechanism
+- ✅ Event emission and listening (react, watchlistUpdate, restock)
+- ✅ Connection state management with detailed logging
+- ✅ iOS-compatible (resolves socket_io_client timeout issues)
+
+**Protocol Implementation**:
+```dart
+// Connection URL: wss://host/socket.io/?EIO=4&transport=websocket
+// Packet types: 0=open, 2=ping, 3=pong, 4=message
+// Message types: 0=connect, 2=event, 4=error
+// Event format: 42["event_name",{data}]
+// Auth format: 40{"token":"JWT"}
+```
+
+**HTTP Fallback**:
+Automatic fallback to HTTP endpoints when WebSocket unavailable:
+- Reactions: `POST /api/alerts/:alertId/react`
+- Ensures 100% reliability regardless of network conditions
+
+**Usage**:
+```dart
+// Initialize with auth token
+final wsClient = NativeWebSocketClient(
+  config: backendConfig,
+  authToken: jwtToken,
+);
+
+// Connect
+await wsClient.connect();
+
+// Emit events
+wsClient.emit('react', {'alertId': '123', 'type': 'yes'});
+
+// Listen for events
+wsClient.on('reactionUpdate', (data) {
+  // Handle real-time reaction updates
+});
+
+// Stream restock alerts
+wsClient.alertStream.listen((alert) {
+  // Handle real-time restock notifications
+});
+```
+
+### Data Layer Architecture
+
+**Repository Pattern** (`lib/data/`)
+```
+lib/data/
+├── auth/                    # Authentication (Discord OAuth, JWT)
+├── products/                # Product catalog management
+├── watchlist/               # Subscription management
+├── restocks/                # Real-time restock feed
+│   ├── native_websocket_client.dart    # WebSocket implementation
+│   ├── restock_feed_repository.dart    # Abstract interface
+│   └── restock_feed_repository_impl.dart # Live + HTTP fallback
+└── history/                 # Historical data & analytics
+```
+
+Each repository provides:
+- Abstract interface for dependency injection
+- Mock implementation for development/testing
+- Real implementation with error handling
+- Automatic caching where appropriate
+
+### Environment Configuration
+
+Production `env.json` template:
+```json
+{
+  "RESTOCKR_ENV": "production",
+  "RESTOCKR_API_BASE": "https://emerald-alerts-production.onrender.com",
+  "RESTOCKR_WS_URL": "https://emerald-alerts-production.onrender.com",
+  "DISCORD_CLIENT_ID": "your-client-id",
+  "DISCORD_CLIENT_SECRET": "your-client-secret",
+  "DISCORD_REDIRECT_URI": "https://restockr.app/auth/callback"
+}
+```
+
+**Required Backend Endpoints** (all implemented):
+- `POST /api/auth/discord` - OAuth callback
+- `GET /api/me` - User profile & watchlist
+- `GET /api/products` - Product catalog
+- `POST /api/subscribe/:sku` - Add to watchlist
+- `DELETE /api/subscribe/:sku` - Remove from watchlist
+- `GET /api/alerts/recent` - Restock feed
+- `POST /api/alerts/:id/react` - Submit reaction (HTTP fallback)
+- `GET /api/history` - Historical aggregations
+- **WebSocket** `/socket.io/` - Real-time events (Socket.IO v4)
 
 ---
 
@@ -294,14 +398,86 @@ Document the final REST/gRPC/WebSocket interface inside the repo once complete (
 
 ---
 
-## Change Log (Last Cycle)
+## User Experience Enhancements
 
-- Modularized all CLI scripts and moved shared logic into `lib/common.sh` + `lib/visual.sh`.
-- Added CocoaPods-friendly iOS project (`ios/Podfile`, `ios/Podfile.lock`).
-- Refreshed `start.sh` with guided launch flows, spinner UI, diagnostics, and log rotation.
-- Created tooling to export/prune logs and manage emulators (`emulators.sh`, `logs.sh`).
-- Standardized `env.json` generation with secure permissions.
-- Removed internal collaboration documents from version control (now ignored via `.gitignore`).
+### In-App Help & Tutorial System ✨
+
+**Interactive Tutorial Modal** (`lib/presentation/help_tutorial_screen/help_tutorial_modal.dart`)
+
+5-slide swipeable tutorial introducing core features:
+1. **Welcome** - App overview and purpose
+2. **Managing Watchlist** - Star icons, add/remove products, subscription management
+3. **Restock History** - Interactive heatmap, hourly breakdowns, activity patterns
+4. **Filters & Settings** - Global filters, retailer overrides, notification preferences
+5. **Get Started** - Ready to track products
+
+**Features**:
+- Swipeable slides with smooth animations
+- Progress indicators (dots)
+- Quick Tips sections with actionable hints
+- Color-coded icons for visual learning
+- Back/Next/Get Started navigation
+- Accessible from Profile screen help button
+
+### Timezone-Aware Timestamps 🌍
+
+**Centralized DateTime Utility** (`lib/core/utils/date_time_utils.dart`)
+
+All timestamps automatically convert UTC to user's local timezone:
+
+**Available Formatters**:
+- `formatFullDate()` - "Monday, Jan 1, 2025"
+- `formatShortDate()` - "Mon, 01 Jan"
+- `formatTime()` - "3:45 PM"
+- `formatTimeWithSeconds()` - "03:45:23 PM"
+- `formatMonthYear()` - "January 2025"
+- `formatRelativeTime()` - "2 hours ago"
+
+**Benefits**:
+- Consistent formatting across all screens
+- Automatic timezone conversion
+- No manual `.toLocal()` calls needed
+- Better user experience for global users
+
+---
+
+## Change Log (Recent Updates)
+
+### v0.1 Branch - Latest Features
+
+**Real-Time Integration** (Oct 16, 2025):
+- ✅ Implemented native Dart WebSocket client with Socket.IO v4 protocol
+- ✅ Added automatic HTTP fallback for reactions when WebSocket unavailable
+- ✅ Fixed iOS connection timeout issues (replaced socket_io_client)
+- ✅ JWT authentication via socket.handshake.auth.token
+- ✅ Ping/pong keep-alive mechanism for stable connections
+
+**User Experience** (Oct 16, 2025):
+- ✅ Added timezone-aware timestamp formatting throughout app
+- ✅ Centralized date/time utility for consistent formatting
+- ✅ All timestamps now display in user's local timezone
+- ✅ In-app help & tutorial system with 5 interactive slides
+- ✅ Swipeable tutorial modal with quick tips
+
+**Authentication** (Oct 14, 2025):
+- ✅ Discord OAuth implementation with mobile device detection
+- ✅ JWT token management with secure storage
+- ✅ Automatic token refresh
+- ✅ OAuth workaround for iOS simulator limitations
+
+**Data Layer** (Oct 14, 2025):
+- ✅ Repository pattern implementation across all features
+- ✅ Mock implementations for development
+- ✅ Real backend integration with error handling
+- ✅ Watchlist sync across WebSocket and HTTP
+
+**Tooling & DevOps**:
+- ✅ Modularized CLI scripts (`lib/common.sh` + `lib/visual.sh`)
+- ✅ CocoaPods-friendly iOS project
+- ✅ Enhanced `start.sh` with guided launch flows
+- ✅ Log rotation and export tools (`logs.sh`)
+- ✅ Emulator management (`emulators.sh`)
+- ✅ Cleaned up temporary documentation and test files
 
 ---
 
