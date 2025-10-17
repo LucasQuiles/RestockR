@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import '../../../core/app_export.dart';
+import '../../../core/utils/date_time_utils.dart';
 import '../../../data/history/models/history_alert.dart';
 import '../../../widgets/custom_image_view.dart';
 
@@ -42,7 +42,7 @@ class HistoryDetailModal extends StatelessWidget {
   }
 
   Widget _buildHeader(BuildContext context) {
-    final dateStr = DateFormat('EEEE, MMM d, yyyy').format(selectedDate);
+    final dateStr = DateTimeUtils.formatFullDate(selectedDate);
     final hourStr = hour.toString().padLeft(2, '0');
 
     return Container(
@@ -169,7 +169,7 @@ class HistoryDetailModal extends StatelessWidget {
   }
 
   Widget _buildAlertCard(BuildContext context, HistoryAlert alert) {
-    final timeStr = DateFormat('h:mm a').format(alert.timestamp);
+    final timeStr = DateTimeUtils.formatTime(alert.timestamp);
 
     return Container(
       decoration: BoxDecoration(

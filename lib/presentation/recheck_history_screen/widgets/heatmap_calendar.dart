@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import '../../../core/app_export.dart';
+import '../../../core/utils/date_time_utils.dart';
 
 /// Custom calendar widget with heatmap coloring based on activity levels
 class HeatmapCalendar extends StatelessWidget {
@@ -45,7 +45,7 @@ class HeatmapCalendar extends StatelessWidget {
   }
 
   Widget _buildMonthHeader(BuildContext context) {
-    final monthName = DateFormat('MMMM yyyy').format(selectedDate);
+    final monthName = DateTimeUtils.formatMonthYear(selectedDate);
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,

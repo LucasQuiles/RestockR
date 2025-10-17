@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import '../../../core/app_export.dart';
 import '../../../core/data_providers.dart';
+import '../../../core/utils/date_time_utils.dart';
 import '../../../data/restocks/restock_feed_repository.dart';
 import '../../../data/restocks/models/restock_alert.dart';
 import '../models/monitor_item_model.dart';
@@ -76,8 +76,8 @@ class ProductMonitorNotifier extends StateNotifier<ProductMonitorState> {
       _indexToAlertId[i] = alert.id;
 
       items.add(MonitorItemModel(
-        date: DateFormat('E, dd MMM').format(alert.timestamp),
-        time: DateFormat('hh:mm:ss a').format(alert.timestamp),
+        date: DateTimeUtils.formatShortDate(alert.timestamp),
+        time: DateTimeUtils.formatTimeWithSeconds(alert.timestamp),
         productImage: alert.image ?? ImageConstant.imgRectangle70,
         productTitle: alert.product,
         storeIcon: _getStoreIcon(alert.store),
